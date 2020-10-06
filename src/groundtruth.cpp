@@ -1,4 +1,4 @@
-#include "bev_converter/groundtruth.h"
+#include "bev_evaluator/groundtruth.h"
 
 GroundTruth::GroundTruth(void)
 :local_nh("~")
@@ -13,7 +13,7 @@ GroundTruth::GroundTruth(void)
 
     pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &GroundTruth::pc_callback, this);
     odom_subscriber = nh.subscribe("/odom", 10, &GroundTruth::odom_callback, this);
-    bev_grid_publisher = nh.advertise<nav_msgs::OccupancyGrid>("/bev/grid", 10);
+    //bev_grid_publisher = nh.advertise<nav_msgs::OccupancyGrid>("/bev/grid", 10);
 }
 
 void GroundTruth::executor(void)
@@ -22,7 +22,6 @@ void GroundTruth::executor(void)
 
     ros::Rate r(Hz);
 	while(ros::ok()){
-        
         
         if(pc_callback_flag && odm_callback_frag){
             std::cout << "people calculate" << std::endl;
@@ -37,13 +36,11 @@ void GroundTruth::executor(void)
 		ros::spinOnce();
     }
 
-
 }
 
 void GroundTruth::formatter(void)
 {
 	/* std::cout << "formatter" << std::endl; */
-
     dt = 1.0 / Hz;
     grid_size = RANGE / GRID_NUM;
 }
@@ -51,6 +48,7 @@ void GroundTruth::formatter(void)
 void GroundTruth::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
     sensor_msgs::PointCloud2 input_pc;
+    pc_seq = input_pc.header.seq;
 
     input_pc = *msg;
 	pcl::fromROSMsg(input_pc, *pcl_input_pc);
@@ -63,17 +61,18 @@ void GroundTruth::odom_callback(const nav_msgs::OdometryConstPtr &msg)
     odom_callback_flag = true;
 }
 
-void GroundTruth::copy_people_data(PeopleData &new, PeopleData &old)
+void GroundTruth::copy_people_data(PeopleData &now, PeopleData &past)
 {
-    old = new;
+    past = now;
 }
+
 void GroundTruth::calculation_peple_point(const CloudXYZIPtr& cloud_ptr ,People)
 {
     std::cout << "--- calculation people point ---" << std::endl;
     int cloud_size = cloud_ptr->points.size();
 
     Eigen::Matrix<double, 3, PEOPLE_NUM> people_point = Eigen::MatrixXD::Zero(3, PEOPLE_NUM);
-    //(x, y, hit_num)*people_num Zero init
+    //(x, y, hit_num)*people_num Array, ZeroInit
 
     for(int i=0;i<cloud_size;i++){
         auto p = cloud_ptr->points[i];
@@ -86,8 +85,8 @@ void GroundTruth::calculation_peple_point(const CloudXYZIPtr& cloud_ptr ,People)
     for(int i=0;i<PEOPLE_NUM;i++){
         
         if(people_point != 0){
-            people_data_new[i].x = people_point(1, id) /people(3, id);
-            people_data_new[i].y = people_point(2, id) /people(3, id);
+            people_data_now[i].x = people_point(1, id) /people(3, id);
+            people_data_now[i].y = people_point(2, id) /people(3, id);
         }
     }
 }
