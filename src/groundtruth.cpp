@@ -177,6 +177,6 @@ void GroundTruth::initializer(void)
 
 cv::Mat GroundTruth::generate_bev_image(PeopleData &pre)
 {
-
+    
 
 }
