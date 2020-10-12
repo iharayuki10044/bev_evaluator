@@ -32,6 +32,7 @@ public:
 
 private:
 
+Eigen::Affine3d affine_transform;
 
 
 }

@@ -90,6 +90,7 @@ private:
 
     Eigen::Vector3d current_position;
     Eigen::Vector3d pre_position;
+    Eigen::Affine3d affine_transform;
 
 }
 
