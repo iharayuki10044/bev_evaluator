@@ -91,7 +91,7 @@ void BEVEvaluator::formatter(void)
     grid_size = RANGE / GRID_NUM;
     cmd_vel_callback_flag = false;
     pc_callback_flag = false;
-    odom_callback_flag = false;
+	IS_SAVE_IMAGE = false;
 
 	src_euqlid_3pts.points.resize(0);
 	pt0.x = 0.0;

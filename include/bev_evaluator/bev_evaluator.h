@@ -81,6 +81,7 @@ class People
 private:
     bool pc_callback_frag = false;
     bool odom_callback_flag = false;
+    bool IS_SAVE_IMAGE = false;
 
     double current_yow;
     double pre_yow;
