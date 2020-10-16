@@ -27,6 +27,15 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/superres/optical_flow.hpp>
+#include <opencv2/core/base.hpp>
+#include <opencv2/core/types.hpp>
+
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
+
+
 class GroundTruth
 {
 public:
@@ -55,14 +64,19 @@ class People
     };
     typedef std::vector<People> PeopleData;
 
-    GroundTruth(void);
-    executor(void);
-    pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg);
-    odom_callback(const nav_msgs::OdometryConstPtr &msg);
-    calculation_peple_point(const cloud_ptr);
-    calculation_people_vector(PeopleData&, PeopleData&);
-    copy_people_data(PeopleData&, PeopleData&);
-    transform_position(PeopleData &pre, double currnet_yow, double pre_yow);
+    void GroundTruth(void);
+    void executor(void);
+    void formatter(void);
+    void pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg);
+    void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
+    void copy_people_data(PeopleData&, PeopleData&);
+    void calucurate_affinematrix(Eigen::Vector3d , double, Eigen::Vector3d, double);
+    void transform_cloudpoint_coordinate(void);
+    void calculation_peple_point(const cloud_ptr);
+    void calculation_people_vector(PeopleData&, PeopleData&);
+    void initializer(void);
+    cv::Mat generate_bev_image(PeopleData&);
+
 
 private:
     bool pc_callback_frag = false;
@@ -70,7 +84,7 @@ private:
 
     double current_yow;
     double pre_yow;
-    double RESOLUTION;
+
     double WIDTH;
     double WIDTH_2;
     int GRID_WIDTH;
@@ -79,18 +93,27 @@ private:
     int PEOPLE_NUM;
     int pc_seq;
 
+    std::string PKG_PATH; 
+    std::string CMD_VEL_TOPIC;
+
+    PeopleData current_people_data;
+    PeopleData pre_people_data;
+
     ros::NodeHandle n;
     ros::NodeHandle nh;
 	ros::Subscriber pc_subscriber;
 	ros::Subscriber odom_subscriber;
 	ros::Publisher bev_grid_publisher;
 
-    PeopleData current_people_data;
-    PeopleData pre_people_data;
-
     Eigen::Vector3d current_position;
     Eigen::Vector3d pre_position;
     Eigen::Affine3d affine_transform;
+
+	pcl::PointCloud<pcl::PointXYZ> src_euqlid_3pts;
+	pcl::PointCloud<pcl::PointXYZ> dst_euqlid_3pts;
+    //to transform pointcloud coordinate
+
+    cv::Mat bev_flow_image;
 
 }
 

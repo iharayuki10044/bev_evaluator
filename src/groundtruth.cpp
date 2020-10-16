@@ -1,25 +1,27 @@
 #include "bev_evaluator/groundtruth.h"
 
 GroundTruth::GroundTruth(void)
-:local_nh("~")
+:nh("~")
 {
-    local_nh.param("RESOLUTION", RESOLUTION, {});
-    local_nh.param("WIDTH", WIDTH, {});
-    local_nh.param("WIDTH_2", WIDTH_2,{});
-    local_nh.param("GRID_WIDTH", GRID_WIDTH, {});
-    local_nh.param("GRID_WIDTH", GRID_WIDTH_2, {});
-    local_nh.param("GRID_NUM", GRID_NUM, {});
-    local_nh.param("PEOPLE_NUM", PEOPLE_NUM, {30});
+	nh.param("RANGE", RANGE, {10.0});
+    nh.param("GRID_NUM", GRID_NUM, {50});
+    nh.param("Hz", Hz, {100.0});
+    nh.param("FLOW_IMAGE_SIZE", FLOW_IMAGE_SIZE, {50});
+    nh.param("PEOPLE_NUM", PEOPLE_NUM, {30});
+    nh.param("SAVE_NUMBER", SAVE_NUMBER, {1});
+	nh.param("CMD_VEL_TOPIC", CMD_VEL_TOPIC, {"/cmd_vel"});
+	nh.param("PKG_PATH", PKG_PATH, {"/home/amsl/ros_catkin_ws/src/bev_evaluator/bev_img"});
 
     pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &GroundTruth::pc_callback, this);
     odom_subscriber = nh.subscribe("/odom", 10, &GroundTruth::odom_callback, this);
-    //bev_grid_publisher = nh.advertise<nav_msgs::OccupancyGrid>("/bev/grid", 10);
+	flow_image_publisher = nh.advertise<sensor_msgs::Image>("/bev/flow_image", 10);
 }
 
 void GroundTruth::executor(void)
 {
     formatter();
-
+	int i=0;
+	int j=0;
     ros::Rate r(Hz);
 	while(ros::ok()){
 
@@ -27,15 +29,51 @@ void GroundTruth::executor(void)
         if(pc_callback_flag && odm_callback_frag){
             std::cout << "people data calculate" << std::endl;
             copy_people_data(current_people_data, pre_people_data);
-            calcurate_people_point(cloud_ptr);        
+			calucurate_affinematrix(current_position, current_yaw, pre_position, pre_yaw);
+			transform_pointcloud_coordinate();
+            calcurate_people_point(cloud_ptr);
             transform_position(current_people_data;
     		calcurate_people_vector(current_people_data, pre_people_data);
+
+            std::cout << "generate image" << std::endl;
+            bev_flow_image = generate_bev_iamge(pre_people_data);
+			
+			cv::flip(bev_flow_image, CV_8U, 255);
+			bev_flow.convertTo(bev_flow_image, CV_8U, 255);
+
+			std::cout << "pub img" << std::endl;
+			cv::Mat flow_img;
+			bev_flow.copyTo(flow_img);
+			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", flow_img).toImageMsg();
+			flow_img_msg->header.seq = pc_seq;
+			flow_image_publisher.publish(flow_img_msg);
+
+			i++;
         }
 
-        if(IS_READY){
-            std::cout << "generate image" << std::endl;
-            generate_bev_iamge(pre_people_data);
-        }
+		if(IS_SAVE_IMAGE){
+			std::vector<int> params(2);
+					// .png
+					const std::string folder_name = PKG_PATH + "/data_" + std::to_string(SAVE_NUMBER);
+					params[0] = CV_IMWRITE_PNG_COMPRESSION;
+					params[1] = 9;
+
+					struct stat statBuf;
+					if(stat(folder_name.c_str(), &statBuf) == 0){
+						std::cout << "exist dir" << std::endl;
+					}else{
+						std::cout << "mkdir" << std::endl;
+						if(mkdir(folder_name.c_str(), 0755) != 0){
+							std::cout << "mkdir error" << std::endl;
+						}
+					}
+					/* cv::imwrite("/home/amsl/ros_catkin_ws/src/bev_converter/bev_img/data_" + std::to_string(SAVE_NUMBER) + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params); */
+					cv::imwrite(folder_name + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params);
+					/* std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl; */
+			j++;
+
+		}
+
 
         pc_callback_frag = false;
         odom_callback_flag = false;
@@ -54,6 +92,21 @@ void GroundTruth::formatter(void)
     cmd_vel_callback_flag = false;
     pc_callback_flag = false;
     odom_callback_flag = false;
+
+	src_euqlid_3pts.points.resize(0);
+	pt0.x = 0.0;
+	pt0.y = 0.0;
+	pt0.z = 0.0;
+	pt1.x = 0.5 * RANGE;
+	pt1.y = 0.0;
+	pt1.z = 0.0;
+	pt2.x = 0.0;
+	pt2.y = 0.5 * RANGE;
+	pt2.z = 0.0;
+	src_euqlid_3pts.points.push_back(pt0);
+	src_euqlid_3pts.points.push_back(pt1);
+	src_euqlid_3pts.points.push_back(pt2);
+
 }
 
 void GroundTruth::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -64,6 +117,7 @@ void GroundTruth::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
     input_pc = *msg;
 	pcl::fromROSMsg(input_pc, *pcl_input_pc);
     pc_callback_flag = true;！
+}
 
 void GroundTruth::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
 //calucurate robot coodinate
@@ -96,10 +150,32 @@ void GroundTruth::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
 	}
 }
 
-
 void GroundTruth::copy_people_data(PeopleData &current, PeopleData &pre)
 {
     pre = current;
+}
+
+void GroundTruth::calucurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)
+{
+	/* std::cout << "BEVImageGenerator::cropped_transformed_grid_img_generator" << std::endl; */
+	double d_yaw = current_yaw - pre_yaw;
+	d_yaw = atan2(sin(d_yaw), cos(d_yaw));
+	Eigen::Matrix3d r;
+	r = Eigen::AngleAxisd(-d_yaw, Eigen::Vector3d::UnitZ());
+
+	Eigen::Matrix3d pre_yaw_rotation;
+	pre_yaw_rotation = Eigen::AngleAxisd(-pre_yaw, Eigen::Vector3d::UnitZ());
+	Eigen::Vector3d _current_position = pre_yaw_rotation * current_position;
+	Eigen::Vector3d _pre_position = pre_yaw_rotation * pre_position;
+	Eigen::Translation<double, 3> t(_pre_position - _current_position);
+
+	affine_transform = t * r;
+	/* std::cout << "affine transformation: \n" << affine_transform.translation() << "\n" << affine_transform.rotation().eulerAngles(0,1,2) << std::endl; */
+}
+
+void Groundtruth::transform_cloudpoint_coordinate(void)
+{
+    pcl::transformPointCloud(src_euqlid_3pts, dst_euqlid_3pts, affine_transform);
 }
 
 void GroundTruth::calcurate_peple_point(const CloudXYZIPtr& cloud_ptr )
@@ -136,22 +212,6 @@ void GroundTruth::calcurate_people_vector(PeopleData &current, PeopleData &pre)
     }
 }
 
-void GroundTruth::transform_coordinate(PeopleData &current)
-{
-    double yow = atan2(current_position.x, current_position.y);
-
-        if(yow < 0){
-            yow += 2 *M_PI;
-        }
-
-    double current_length = sqrt(pow(current_position.x, 2) +pow(current_position.y, 2));
-    
-    for(int i=0;i<PEOPLE_NUM;i++){
-        current[i].point_x = current_length *cos(current_yow) + current[i].length *cos(current_yow +yow);
-        current[i].point_y = current_length *sin(current_yow) + current[i].length *sin(current_yow +yow);
-    }
-}
-
 void GroundTruth::initializer(void)
 {
 //	std::cout << "initializer" << std::endl;
@@ -161,83 +221,50 @@ void GroundTruth::initializer(void)
 	pre_yaw = 0.0;
 }
 
- cv::Mat BEVImageGenerator::image_transformer(cv::Mat src_img)
-{
-	std::cout << "BEVImageGenerator::image_transformer" << std::endl;
-
-	float alpha = 1.0;
-    pcl::transformPointCloud(src_euqlid_3pts, dst_euqlid_3pts, affine_transform);
-    // pointcloud transform coodirate
-
-	const cv::Point2f src_pt[] = {cv::Point2f(src_euqlid_3pts.points[0].x / grid_size, src_euqlid_3pts.points[0].y / grid_size),
-								  cv::Point2f(src_euqlid_3pts.points[1].x / grid_size, src_euqlid_3pts.points[1].y / grid_size),
-								  cv::Point2f(src_euqlid_3pts.points[2].x / grid_size, src_euqlid_3pts.points[2].y / grid_size)};
-	const cv::Point2f dst_pt[] = {cv::Point2f(alpha * dst_euqlid_3pts.points[0].x / grid_size, alpha * dst_euqlid_3pts.points[0].y / grid_size),
-								  cv::Point2f(alpha * dst_euqlid_3pts.points[1].x / grid_size, alpha * dst_euqlid_3pts.points[1].y / grid_size),
-								  cv::Point2f(alpha * dst_euqlid_3pts.points[2].x / grid_size, alpha * dst_euqlid_3pts.points[2].y / grid_size)};
-
-    const cv::Mat affine_matrix = cv::getAffineTransform(src_pt, dst_pt);
-    cv::Mat dst_img;
-    cv::warpAffine(src_img, dst_img, affine_matrix, src_img.size(), cv::INTER_LINEAR, cv::BORDER_TRANSPARENT);
-
-	std::cout << "src_pt" << std::endl;
-	for(int i = 0; i < 3; i++){
-		std::cout << src_pt[i] << std::endl;
-	}
-	std::cout << "dst_pt" << std::endl;
-	for(int i = 0; i < 3; i++){
-		std::cout << dst_pt[i] << std::endl;
-	}
-    return dst_img;
-}
-
 cv::Mat GroundTruth::generate_bev_image(PeopleData &pre)
 {
-	std::cout << "flow_estimator" << std::endl;
+	std::cout << "generate_bev_image" << std::endl;
 
-    cv::Mat flow_bgr;
-	int img_size = GRID_NUM - 2 * MANUAL_CROP_SIZE;
+    cv::Mat flow_image;
+	int img_size = GRID_NUM;
 	cv::Mat flow_x = cv::Mat::zeros(img_size, img_size, CV_32F);
 	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
 
-		std::vector<cv::Point2f> pre_corners;
-		std::vector<cv::Point2f> cur_corners;
-		cv::goodFeaturesToTrack(pre_img, pre_corners, MAX_CORNERS, QUALITY_LEVEL, MIN_DISTANCE);
-		cv::goodFeaturesToTrack(cur_img, cur_corners, MAX_CORNERS, QUALITY_LEVEL, MIN_DISTANCE);
-		std::cout << "pre_img.size() = " << pre_img.size() << std::endl;
-		std::cout << "cur_img.size() = " << cur_img.size() << std::endl;
-		std::cout << "pre_corners:" << pre_corners.size() << std::endl;
-		std::cout << "cur_corners:" << cur_corners.size() << std::endl;
-		if(pre_corners.size() > 0 && cur_corners.size() > 0){
-			cv::cornerSubPix(pre_img, pre_corners, cv::Size(WIN_SIZE, WIN_SIZE), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT | cv::TermCriteria::EPS, MAX_COUNT, QUALITY_LEVEL));
-			cv::cornerSubPix(cur_img, cur_corners, cv::Size(WIN_SIZE, WIN_SIZE), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::COUNT | cv::TermCriteria::EPS, MAX_COUNT, QUALITY_LEVEL));
-			std::vector<uchar> features_found;
-			std::vector<float> features_errors;
-			cv::calcOpticalFlowPyrLK(pre_img, cur_img, pre_corners, cur_corners, features_found, features_errors);
+    //そのまま使える
+	cv::Mat magnitude, angle;
+	cv::cartToPolar(flow_x, flow_y, magnitude, angle, true);
 
-			for(size_t i = 0; i < features_found.size(); i++){
-				cv::Point flow_vector = cv::Point((cur_corners[i].x - pre_corners[i].x), (cur_corners[i].y - pre_corners[i].y));
-				flow_x.at<float>(pre_corners[i].x, pre_corners[i].y) = flow_vector.x;
-				flow_y.at<float>(pre_corners[i].x, pre_corners[i].y) = flow_vector.y;
-			}
-        }
+	cv::Mat hsv_planes[3];
+	hsv_planes[0] = angle;
+	cv::normalize(magnitude, magnitude, 0, 1, cv::NORM_MINMAX);
+	/* cv::normalize(magnitude, magnitude, 1.0, 0.0, cv::NORM_L1); */
+	hsv_planes[1] = magnitude;
+	hsv_planes[2] = cv::Mat::ones(magnitude.size(), CV_32F);
+	
+	cv::Mat hsv;
+	cv::merge(hsv_planes, 3, hsv);
 
-        //そのまま使える
-		cv::Mat magnitude, angle;
-		cv::cartToPolar(flow_x, flow_y, magnitude, angle, true);
+	cv::cvtColor(hsv, flow_bgr, cv::COLOR_HSV2BGR);
 
-		cv::Mat hsv_planes[3];
-		hsv_planes[0] = angle;
-		cv::normalize(magnitude, magnitude, 0, 1, cv::NORM_MINMAX);
-		/* cv::normalize(magnitude, magnitude, 1.0, 0.0, cv::NORM_L1); */
-		hsv_planes[1] = magnitude;
-		hsv_planes[2] = cv::Mat::ones(magnitude.size(), CV_32F);
-		
-		cv::Mat hsv;
-		cv::merge(hsv_planes, 3, hsv);
+	IS_SAVE_IMAGE = true;
 
-		cv::cvtColor(hsv, flow_bgr, cv::COLOR_HSV2BGR);
-
-    return flow_bgr;
+    return flow_image;
 
 }
+
+
+// void GroundTruth::transform_coordinate(PeopleData &current)
+// {
+//     double yow = atan2(current_position.x, current_position.y);
+
+//         if(yow < 0){
+//             yow += 2 *M_PI;
+//         }
+
+//     double current_length = sqrt(pow(current_position.x, 2) +pow(current_position.y, 2));
+    
+//     for(int i=0;i<PEOPLE_NUM;i++){
+//         current[i].point_x = current_length *cos(current_yow) + current[i].length *cos(current_yow +yow);
+//         current[i].point_y = current_length *sin(current_yow) + current[i].length *sin(current_yow +yow);
+//     }
+// }
