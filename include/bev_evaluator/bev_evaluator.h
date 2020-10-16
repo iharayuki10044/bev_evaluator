@@ -1,5 +1,5 @@
-#ifndef __GROUNDTRUTH_H
-#define __GROUNDTRUTH_H
+#ifndef __BEV_EVALUATOR_H
+#define __BEV_EVALUATOR_H
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -36,7 +36,7 @@
 #include <image_transport/image_transport.h>
 
 
-class GroundTruth
+class BEVEvaluator
 {
 public:
 

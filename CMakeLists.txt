@@ -10,7 +10,34 @@ project(bev_evaluator)
 find_package(catkin REQUIRED)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system
+	geometry_msgs
+	nav_msgs
+    visualization_msgs
+  	rostest
+  	tf2_sensor_msgs
+  	roscpp
+  	rospy
+  	sensor_msgs
+  	std_msgs
+  	tf
+	pcl_ros
+    cv_bridge
+	image_transport
+    # message_generation
+)
+
+find_package(OpenMP)
+if(OPENMP_FOUND)
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+find_package(Boost REQUIRED COMPONENTS)
+find_package(OpenCV REQUIRED)
+find_package(PCL 1.8 REQUIRED)
+find_package(Eigen3 REQUIRED COMPONENTS system)
+include_directories(${Eigen_INCLUDE_DIRS})
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -99,7 +126,8 @@ find_package(catkin REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
+  CATKIN_DEPENDS roscpp rospy std_msgs
 #  LIBRARIES bev_evaluator
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
@@ -112,14 +140,25 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
-# ${catkin_INCLUDE_DIRS}
+    include
+	${catkin_INCLUDE_DIRS}
+	${PCL_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
+)
+
+link_directories(
+	#${PCL_INCLUDE_DIRS}
+    ${PCL_LIBRARY_DIRS}
+)
+
+add_definitions(
+	${PCL_DEFINITIONS}
 )
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/bev_evaluator.cpp
-# )
+add_library(libbev_evaluator
+   src/bev_evaluator.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -145,6 +184,13 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+
+target_link_libraries(bev_evaluator
+	${catkin_LIBRARIES}
+	${PCL_LIBRARIES}
+    ${OpenCV_LIBS}
+    libbev_evaluator
+)
 
 #############
 ## Install ##

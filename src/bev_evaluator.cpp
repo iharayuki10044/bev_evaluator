@@ -1,6 +1,6 @@
-#include "bev_evaluator/groundtruth.h"
+#include "bev_evaluator/bev_evaluator.h"
 
-GroundTruth::GroundTruth(void)
+BEVEvaluator::BEVEvaluator(void)
 :nh("~")
 {
 	nh.param("RANGE", RANGE, {10.0});
@@ -12,12 +12,12 @@ GroundTruth::GroundTruth(void)
 	nh.param("CMD_VEL_TOPIC", CMD_VEL_TOPIC, {"/cmd_vel"});
 	nh.param("PKG_PATH", PKG_PATH, {"/home/amsl/ros_catkin_ws/src/bev_evaluator/bev_img"});
 
-    pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &GroundTruth::pc_callback, this);
-    odom_subscriber = nh.subscribe("/odom", 10, &GroundTruth::odom_callback, this);
+    pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &BEVEvaluator::pc_callback, this);
+    odom_subscriber = nh.subscribe("/odom", 10, &BEVEvaluator::odom_callback, this);
 	flow_image_publisher = nh.advertise<sensor_msgs::Image>("/bev/flow_image", 10);
 }
 
-void GroundTruth::executor(void)
+void BEVEvaluator::executor(void)
 {
     formatter();
 	int i=0;
@@ -84,7 +84,7 @@ void GroundTruth::executor(void)
 
 }
 
-void GroundTruth::formatter(void)
+void BEVEvaluator::formatter(void)
 {
 	/* std::cout << "formatter" << std::endl; */
     dt = 1.0 / Hz;
@@ -109,7 +109,7 @@ void GroundTruth::formatter(void)
 
 }
 
-void GroundTruth::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
+void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
     sensor_msgs::PointCloud2 input_pc;
     pc_seq = input_pc.header.seq;
@@ -119,7 +119,7 @@ void GroundTruth::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
     pc_callback_flag = true;！
 }
 
-void GroundTruth::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
+void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
 //calucurate robot coodinate
 {
 	if(USE_CMD_VEL){
@@ -150,12 +150,12 @@ void GroundTruth::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
 	}
 }
 
-void GroundTruth::copy_people_data(PeopleData &current, PeopleData &pre)
+void BEVEvaluator::copy_people_data(PeopleData &current, PeopleData &pre)
 {
     pre = current;
 }
 
-void GroundTruth::calucurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)
+void BEVEvaluator::calucurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)
 {
 	/* std::cout << "BEVImageGenerator::cropped_transformed_grid_img_generator" << std::endl; */
 	double d_yaw = current_yaw - pre_yaw;
@@ -173,12 +173,12 @@ void GroundTruth::calucurate_affinematrix(Eigen::Vector3d current_position, doub
 	/* std::cout << "affine transformation: \n" << affine_transform.translation() << "\n" << affine_transform.rotation().eulerAngles(0,1,2) << std::endl; */
 }
 
-void Groundtruth::transform_cloudpoint_coordinate(void)
+void BEVEvaluator::transform_cloudpoint_coordinate(void)
 {
     pcl::transformPointCloud(src_euqlid_3pts, dst_euqlid_3pts, affine_transform);
 }
 
-void GroundTruth::calcurate_peple_point(const CloudXYZIPtr& cloud_ptr )
+void BEVEvaluator::calcurate_peple_point(const CloudXYZIPtr& cloud_ptr )
 {
     std::cout << "--- calcurate people point ---" << std::endl;
     int cloud_size = cloud_ptr->points.size();
@@ -204,7 +204,7 @@ void GroundTruth::calcurate_peple_point(const CloudXYZIPtr& cloud_ptr )
     }
 }
 
-void GroundTruth::calcurate_people_vector(PeopleData &current, PeopleData &pre)
+void BEVEvaluator::calcurate_people_vector(PeopleData &current, PeopleData &pre)
 {
     for(int i=0;i<PEOPLE_NUM;i++){
         pre[i].move_vector_x = current[i].point_x - pre[i].point.x;
@@ -212,7 +212,7 @@ void GroundTruth::calcurate_people_vector(PeopleData &current, PeopleData &pre)
     }
 }
 
-void GroundTruth::initializer(void)
+void BEVEvaluator::initializer(void)
 {
 //	std::cout << "initializer" << std::endl;
 	current_position = Eigen::Vector3d::Zero();
@@ -221,7 +221,7 @@ void GroundTruth::initializer(void)
 	pre_yaw = 0.0;
 }
 
-cv::Mat GroundTruth::generate_bev_image(PeopleData &pre)
+cv::Mat BEVEvaluator::generate_bev_image(PeopleData &pre)
 {
 	std::cout << "generate_bev_image" << std::endl;
 
@@ -251,20 +251,3 @@ cv::Mat GroundTruth::generate_bev_image(PeopleData &pre)
     return flow_image;
 
 }
-
-
-// void GroundTruth::transform_coordinate(PeopleData &current)
-// {
-//     double yow = atan2(current_position.x, current_position.y);
-
-//         if(yow < 0){
-//             yow += 2 *M_PI;
-//         }
-
-//     double current_length = sqrt(pow(current_position.x, 2) +pow(current_position.y, 2));
-    
-//     for(int i=0;i<PEOPLE_NUM;i++){
-//         current[i].point_x = current_length *cos(current_yow) + current[i].length *cos(current_yow +yow);
-//         current[i].point_y = current_length *sin(current_yow) + current[i].length *sin(current_yow +yow);
-//     }
-// }
