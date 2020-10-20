@@ -29,7 +29,7 @@ void BEVEvaluator::executor(void)
         if(pc_callback_flag && odm_callback_frag){
             std::cout << "people data calculate" << std::endl;
             copy_people_data(current_people_data, pre_people_data);
-			calucurate_affinematrix(current_position, current_yaw, pre_position, pre_yaw);
+			calcurate_affinematrix(current_position, current_yaw, pre_position, pre_yaw);
 			transform_pointcloud_coordinate();
             calcurate_people_point(cloud_ptr);
             transform_position(current_people_data;
@@ -120,7 +120,7 @@ void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 }
 
 void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
-//calucurate robot coodinate
+//calcurate robot coodinate
 {
 	if(USE_CMD_VEL){
 		geometry_msgs::Twist cmd_vel = *msg;
@@ -155,7 +155,7 @@ void BEVEvaluator::copy_people_data(PeopleData &current, PeopleData &pre)
     pre = current;
 }
 
-void BEVEvaluator::calucurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)
+void BEVEvaluator::calcurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)
 {
 	/* std::cout << "BEVImageGenerator::cropped_transformed_grid_img_generator" << std::endl; */
 	double d_yaw = current_yaw - pre_yaw;
