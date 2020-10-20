@@ -52,14 +52,12 @@ class People
     {
     public:
         People(void);
-
         double point_x;
         double point_y;
         double length;
         int point_hit_num;
         double move_vector_x;
         double move_vector_y;
-
     private:
     };
     typedef std::vector<People> PeopleData;
@@ -85,7 +83,6 @@ private:
 
     double current_yow;
     double pre_yow;
-
     double WIDTH;
     double WIDTH_2;
     int GRID_WIDTH;
