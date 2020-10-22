@@ -116,7 +116,7 @@ void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
 
     input_pc = *msg;
 	pcl::fromROSMsg(input_pc, *pcl_input_pc);
-    pc_callback_flag = true;！
+    pc_callback_flag = true;
 }
 
 void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
@@ -150,12 +150,14 @@ void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
 	}
 }
 
-void BEVEvaluator::people_position_callback(const pedsim_msgs::TrackedPersons::Constptr& msg)
+void BEVEvaluator::person_position_callback(const pedsim_msgs::TrackedPersons::Constptr& msg)
 {
 	pedsim_msgs::TrackedPersons tracked_person;
 	int id = tracked_person.track_id
 	PeopleData[id].x = tracked_person.pose.x;
 	PeopleDate[id].y = tracked_person.pose.y;
+
+	person_position_callback = true;
 	}
 
 }
