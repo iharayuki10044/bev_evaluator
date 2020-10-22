@@ -68,7 +68,7 @@ class People
     void pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg);
     void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
     void copy_people_data(PeopleData&, PeopleData&);
-    void calucurate_affinematrix(Eigen::Vector3d , double, Eigen::Vector3d, double);
+    void calcurate_affinematrix(Eigen::Vector3d , double, Eigen::Vector3d, double);
     void transform_cloudpoint_coordinate(void);
     void calculation_peple_point(const cloud_ptr);
     void calculation_people_vector(PeopleData&, PeopleData&);
@@ -116,9 +116,3 @@ private:
 }
 
 #endif
-// __GROUNDTRUTH
-// while(1){
-//     people_data_new[i].point_x = 5664;
-
-//     people_data_old = people_data_new;
-// }

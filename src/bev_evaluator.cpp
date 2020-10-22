@@ -14,6 +14,7 @@ BEVEvaluator::BEVEvaluator(void)
 
     pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &BEVEvaluator::pc_callback, this);
     odom_subscriber = nh.subscribe("/odom", 10, &BEVEvaluator::odom_callback, this);
+	tracked_person_subscriber = nh.subscribe("/", 10, &BEVEvaluator::tracked_person_callback, this);
 	flow_image_publisher = nh.advertise<sensor_msgs::Image>("/bev/flow_image", 10);
 }
 
@@ -32,7 +33,6 @@ void BEVEvaluator::executor(void)
 			calcurate_affinematrix(current_position, current_yaw, pre_position, pre_yaw);
 			transform_pointcloud_coordinate();
             calcurate_people_point(cloud_ptr);
-            transform_position(current_people_data;
     		calcurate_people_vector(current_people_data, pre_people_data);
 
             std::cout << "generate image" << std::endl;
@@ -150,6 +150,16 @@ void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
 	}
 }
 
+void BEVEvaluator::people_position_callback(const pedsim_msgs::TrackedPersons::Constptr& msg)
+{
+	pedsim_msgs::TrackedPersons tracked_person;
+	int id = tracked_person.track_id
+	PeopleData[id].x = tracked_person.pose.x;
+	PeopleDate[id].y = tracked_person.pose.y;
+	}
+
+}
+
 void BEVEvaluator::copy_people_data(PeopleData &current, PeopleData &pre)
 {
     pre = current;
@@ -159,7 +169,7 @@ void BEVEvaluator::calcurate_affinematrix(Eigen::Vector3d current_position, doub
 {
 	/* std::cout << "BEVImageGenerator::cropped_transformed_grid_img_generator" << std::endl; */
 	double d_yaw = current_yaw - pre_yaw;
-	d_yaw = atan2(sin(d_yaw), cos(d_yaw));
+	d_yaw = atan2()sin(d_yaw), cos(d_yaw));
 	Eigen::Matrix3d r;
 	r = Eigen::AngleAxisd(-d_yaw, Eigen::Vector3d::UnitZ());
 
@@ -178,7 +188,7 @@ void BEVEvaluator::transform_cloudpoint_coordinate(void)
     pcl::transformPointCloud(src_euqlid_3pts, dst_euqlid_3pts, affine_transform);
 }
 
-void BEVEvaluator::calcurate_peple_point(const CloudXYZIPtr& cloud_ptr )
+void BEVEvaluator::calcurate_people_point(const CloudXYZIPtr& cloud_ptr )
 {
     std::cout << "--- calcurate people point ---" << std::endl;
     int cloud_size = cloud_ptr->points.size();

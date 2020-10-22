@@ -127,7 +127,7 @@ include_directories(${Eigen_INCLUDE_DIRS})
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp rospy std_msgs
+#  CATKIN_DEPENDS roscpp rospy std_msgs
 #  LIBRARIES bev_evaluator
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
