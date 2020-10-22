@@ -67,10 +67,10 @@ class People
     void formatter(void);
     void pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg);
     void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
-    void copy_people_data(PeopleData&, PeopleData&);
+    
     void calcurate_affinematrix(Eigen::Vector3d , double, Eigen::Vector3d, double);
     void transform_cloudpoint_coordinate(void);
-    void calculation_peple_point(const cloud_ptr);
+    
     void calculation_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
     cv::Mat generate_bev_image(PeopleData&);

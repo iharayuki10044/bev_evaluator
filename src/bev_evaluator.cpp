@@ -29,10 +29,10 @@ void BEVEvaluator::executor(void)
         
         if(pc_callback_flag && odm_callback_frag){
             std::cout << "people data calculate" << std::endl;
-            copy_people_data(current_people_data, pre_people_data);
+            
 			calcurate_affinematrix(current_position, current_yaw, pre_position, pre_yaw);
 			transform_pointcloud_coordinate();
-            calcurate_people_point(cloud_ptr);
+            
     		calcurate_people_vector(current_people_data, pre_people_data);
 
             std::cout << "generate image" << std::endl;
@@ -153,18 +153,16 @@ void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
 void BEVEvaluator::person_position_callback(const pedsim_msgs::TrackedPersons::Constptr& msg)
 {
 	pedsim_msgs::TrackedPersons tracked_person;
-	int id = tracked_person.track_id
-	PeopleData[id].x = tracked_person.pose.x;
-	PeopleDate[id].y = tracked_person.pose.y;
+	int id = tracked_person.track_id;
+
+	pre_people_data[id] = current_people_data[id];
+
+	current_people_data[id].x = tracked_person.pose.x;
+	current_people_data[id].y = tracked_person.pose.y;
 
 	person_position_callback = true;
 	}
 
-}
-
-void BEVEvaluator::copy_people_data(PeopleData &current, PeopleData &pre)
-{
-    pre = current;
 }
 
 void BEVEvaluator::calcurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)
@@ -188,32 +186,6 @@ void BEVEvaluator::calcurate_affinematrix(Eigen::Vector3d current_position, doub
 void BEVEvaluator::transform_cloudpoint_coordinate(void)
 {
     pcl::transformPointCloud(src_euqlid_3pts, dst_euqlid_3pts, affine_transform);
-}
-
-void BEVEvaluator::calcurate_people_point(const CloudXYZIPtr& cloud_ptr )
-{
-    std::cout << "--- calcurate people point ---" << std::endl;
-    int cloud_size = cloud_ptr->points.size();
-
-    Eigen::Matrix<double, 3, PEOPLE_NUM> people_point = Eigen::MatrixXD::Zero(3, PEOPLE_NUM);
-    //(x, y, hit_num)*people_num Array, ZeroInit
-
-    for(int i=0;i<cloud_size;i++){
-        auto p = cloud_ptr->points[i];
-        double id = cloud_ptr->intensity[i] - 1;
-        people_point(1, id) += p.x;
-        people_point(2, id) += p.y;
-        people_point(3, id) += 1;
-    }
-
-    for(int i=0;i<PEOPLE_NUM;i++){
-        
-        if(people_point != 0){
-            current[i].point_x = people_point(1, id) /people(3, id);
-            current[i].point_y = people_point(2, id) /people(3, id);
-            current[i].length = sqrt(pow(current[i].point_x, 2) +pow(current[i].point_y, 2));   
-        }
-    }
 }
 
 void BEVEvaluator::calcurate_people_vector(PeopleData &current, PeopleData &pre)
