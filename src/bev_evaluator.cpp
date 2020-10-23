@@ -161,8 +161,6 @@ void BEVEvaluator::person_position_callback(const pedsim_msgs::TrackedPersons::C
 	current_people_data[id].y = tracked_person.pose.y;
 
 	person_position_callback = true;
-	}
-
 }
 
 void BEVEvaluator::calcurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)

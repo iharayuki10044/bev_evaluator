@@ -98,7 +98,6 @@ private:
     PeopleData current_people_data;
     PeopleData pre_people_data;
 
-    ros::NodeHandle n;
     ros::NodeHandle nh;
 	ros::Subscriber pc_subscriber;
 	ros::Subscriber odom_subscriber;
