@@ -62,6 +62,28 @@ class People
     };
     typedef std::vector<People> PeopleData;
 
+class Gridcell : public
+    {
+    public:
+        Gridcell(void);
+        int index_x;
+        int index_y;
+        int hit_people_id;
+        double move_vector_x;
+        double move_vector_y;
+        bool is_people_exist;
+    private:
+    };
+    typedef std::vector<Gridcell> OccupancyGridMap;
+
+    bool is_valid_point(double x, double y);
+
+    int get_index_from_xy(const double x, const double y);
+    int get_x_index_from_index(const int index);
+    int get_y_index_from_index(const int index);
+    double get_x_from_index(const int index);
+    double get_y_from_index(const int index);
+
     void GroundTruth(void);
     void executor(void);
     void formatter(void);
@@ -70,9 +92,10 @@ class People
     
     void calcurate_affinematrix(Eigen::Vector3d , double, Eigen::Vector3d, double);
     void transform_cloudpoint_coordinate(void);
-    
+
     void calculation_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
+    void ogm_initializer(OccupancyGridMap&);
     cv::Mat generate_bev_image(PeopleData&);
 
 
@@ -97,6 +120,7 @@ private:
 
     PeopleData current_people_data;
     PeopleData pre_people_data;
+    OccupancyGridMap occupancy_grid_map;
 
     ros::NodeHandle nh;
 	ros::Subscriber pc_subscriber;
@@ -116,3 +140,4 @@ private:
 }
 
 #endif
+

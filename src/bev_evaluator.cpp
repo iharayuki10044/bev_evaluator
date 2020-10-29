@@ -12,6 +12,11 @@ BEVEvaluator::BEVEvaluator(void)
 	nh.param("CMD_VEL_TOPIC", CMD_VEL_TOPIC, {"/cmd_vel"});
 	nh.param("PKG_PATH", PKG_PATH, {"/home/amsl/ros_catkin_ws/src/bev_evaluator/bev_img"});
 
+	GRID_WIDTH = WIDTH / RESOLUTION;
+    GRID_NUM = GRID_WIDTH * GRID_WIDTH;
+    WIDTH_2 = WIDTH / 2.0;
+    GRID_WIDTH_2 = GRID_WIDTH / 2.0;
+
     pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &BEVEvaluator::pc_callback, this);
     odom_subscriber = nh.subscribe("/odom", 10, &BEVEvaluator::odom_callback, this);
 	tracked_person_subscriber = nh.subscribe("/", 10, &BEVEvaluator::tracked_person_callback, this);
@@ -29,14 +34,11 @@ void BEVEvaluator::executor(void)
         
         if(pc_callback_flag && odm_callback_frag){
             std::cout << "people data calculate" << std::endl;
-            
-			calcurate_affinematrix(current_position, current_yaw, pre_position, pre_yaw);
-			transform_pointcloud_coordinate();
-            
     		calcurate_people_vector(current_people_data, pre_people_data);
+			generate_occupancy_grid_map(cloud_ptr, occupancy_grid_map);
 
             std::cout << "generate image" << std::endl;
-            bev_flow_image = generate_bev_iamge(pre_people_data);
+            bev_flow_image = generate_bev_iamge(pre_people_data, occupancy_grid_map);
 			
 			cv::flip(bev_flow_image, CV_8U, 255);
 			bev_flow.convertTo(bev_flow_image, CV_8U, 255);
@@ -203,7 +205,14 @@ void BEVEvaluator::initializer(void)
 	pre_yaw = 0.0;
 }
 
-cv::Mat BEVEvaluator::generate_bev_image(PeopleData &pre)
+void BEVEvaluator::ogm_initializer(OccupancyGridMap& map)
+{
+	for(int i=0;i<GRID_NUM;i++){
+		map[i].is_people_exist = false;
+	}
+}
+
+cv::Mat BEVEvaluator::generate_bev_image(PeopleData& pre, OccupancyGridMap& map)
 {
 	std::cout << "generate_bev_image" << std::endl;
 
@@ -211,6 +220,17 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData &pre)
 	int img_size = GRID_NUM;
 	cv::Mat flow_x = cv::Mat::zeros(img_size, img_size, CV_32F);
 	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
+
+	for(int  i = 0; i < GRID_NUM; i++){
+		if(!map[i].is_people_exist){
+			continue;
+		}
+		int id = map.hit_people_id;
+		flow_y.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_x;
+		flow_x.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_y;
+	}
+
+
 
     //そのまま使える
 	cv::Mat magnitude, angle;
@@ -231,5 +251,62 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData &pre)
 	IS_SAVE_IMAGE = true;
 
     return flow_image;
+
+}
+
+int BEVEvaluator::get_index_from_xy(const double x, const double y)
+{
+    int _x = floor(x / RESOLUTION + 0.5) + GRID_WIDTH_2;
+    int _y = floor(y / RESOLUTION + 0.5) + GRID_WIDTH_2;
+    return _y * GRID_WIDTH + _x;
+}
+
+int BEVEvaluator::get_x_index_from_index(const int index)
+{
+    return index % GRID_WIDTH;
+}
+
+int BEVEvaluator::get_y_index_from_index(const int index)
+{
+    return index / GRID_WIDTH;
+}
+
+double BEVEvaluator::get_x_from_index(const int index)
+{
+    return (get_x_index_from_index(index) - GRID_WIDTH_2) * RESOLUTION;
+}
+
+double BEVEvaluator::get_y_from_index(const int index)
+{
+    return (get_y_index_from_index(index) - GRID_WIDTH_2) * RESOLUTION;
+}
+
+bool BEVEvaluator::is_valid_point(double x, double y)
+{
+    int index = get_index_from_xy(x, y);
+    if(x < -WIDTH_2 || x > WIDTH_2 || y < -WIDTH_2 || y > WIDTH_2){
+        return false;
+    }else if(index < 0 || GRID_NUM <= index){
+        return false;
+    }else{
+        return true;
+    }
+}
+
+void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZINPtr& cloud_ptr, OccupancyGridMap& map)
+{
+	int cloud_size = cloud_ptr->points.size();
+	for(int i=0;i<cloud_size;i++){
+		auto p = cloud_ptr->points[i];
+		if(!is_valid_point(p.x, p.y)){
+			continue;
+		}
+
+	int index = get_index_from_xy(p.x, p.y);
+	map[index].is_people_exist = true;
+	map[index].hit_people_id = cloud_ptr->intensity;
+	map[index].index_x = get_x_index_from_index(index);
+	map[index].index_y = get_y_index_from_index(index);
+	}
 
 }
