@@ -52,17 +52,17 @@ class People
     {
     public:
         People(void);
+        int point_hit_num;
         double point_x;
         double point_y;
         double length;
-        int point_hit_num;
         double move_vector_x;
         double move_vector_y;
     private:
     };
     typedef std::vector<People> PeopleData;
 
-class Gridcell : public
+class Gridcell
     {
     public:
         Gridcell(void);
@@ -89,10 +89,8 @@ class Gridcell : public
     void formatter(void);
     void pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg);
     void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
-    
     void calcurate_affinematrix(Eigen::Vector3d , double, Eigen::Vector3d, double);
     void transform_cloudpoint_coordinate(void);
-
     void calculation_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
     void ogm_initializer(OccupancyGridMap&);

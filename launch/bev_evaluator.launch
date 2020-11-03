@@ -2,6 +2,7 @@
 <launch>
     <arg name="range" default="10.0"/>
     <arg name="grid_num" default="50"/>
+	<arg name="people_num" default="30"/>
     <arg name="flow_image_size" default="50"/>
     <arg name="hz" default="100.0"/>
     <arg name="image_hz" default="100.0"/>
@@ -14,6 +15,7 @@
 	<node pkg="bev_evaluator" type="bev_flow_estimator" name="bev_flow_estimator" output="screen">
 		<param name="RANGE" value="$(arg range)" type="double"/>
 		<param name="GRID_NUM" value="$(arg grid_num)" type="int"/>
+		<param name="PEOPLE_NUM" value="$(arg people_num)" type="int"/>
 		<param name="FLOW_IMAGE_SIZE" value="$(arg flow_image_size)" type="int"/>
 		<param name="Hz" value="$(arg hz)" type="double"/>
 		<param name="SAVE_NUMBER" value="$(arg save_data_num)" type="int"/>

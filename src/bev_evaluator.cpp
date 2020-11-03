@@ -56,28 +56,26 @@ void BEVEvaluator::executor(void)
 		if(IS_SAVE_IMAGE){
 			std::vector<int> params(2);
 					// .png
-					const std::string folder_name = PKG_PATH + "/data_" + std::to_string(SAVE_NUMBER);
-					params[0] = CV_IMWRITE_PNG_COMPRESSION;
-					params[1] = 9;
-
-					struct stat statBuf;
-					if(stat(folder_name.c_str(), &statBuf) == 0){
-						std::cout << "exist dir" << std::endl;
-					}else{
-						std::cout << "mkdir" << std::endl;
-						if(mkdir(folder_name.c_str(), 0755) != 0){
-							std::cout << "mkdir error" << std::endl;
-						}
+			const std::string folder_name = PKG_PATH + "/data_" + std::to_string(SAVE_NUMBER);
+			params[0] = CV_IMWRITE_PNG_COMPRESSION;
+			params[1] = 9;
+			struct stat statBuf;
+				if(stat(folder_name.c_str(), &statBuf) == 0){
+					std::cout << "exist dir" << std::endl;
+				}else{
+					std::cout << "mkdir" << std::endl;
+					if(mkdir(folder_name.c_str(), 0755) != 0){
+						std::cout << "mkdir error" << std::endl;
 					}
-					/* cv::imwrite("/home/amsl/ros_catkin_ws/src/bev_converter/bev_img/data_" + std::to_string(SAVE_NUMBER) + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params); */
-					cv::imwrite(folder_name + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params);
-					/* std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl; */
+				}
+			/* cv::imwrite("/home/amsl/ros_catkin_ws/src/bev_converter/bev_img/data_" + std::to_string(SAVE_NUMBER) + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params); */
+			cv::imwrite(folder_name + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params);
+			/* std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl; */
 			j++;
 
 		}
 
-
-        pc_callback_frag = false;
+		pc_callback_flag ＝false;
         odom_callback_flag = false;
 
 		r.sleep();
@@ -121,7 +119,7 @@ void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
     pc_callback_flag = true;
 }
 
-void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
+void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr　&msg)
 //calcurate robot coodinate
 {
 	if(USE_CMD_VEL){
@@ -158,7 +156,6 @@ void BEVEvaluator::person_position_callback(const pedsim_msgs::TrackedPersons::C
 	int id = tracked_person.track_id;
 
 	pre_people_data[id] = current_people_data[id];
-
 	current_people_data[id].x = tracked_person.pose.x;
 	current_people_data[id].y = tracked_person.pose.y;
 
@@ -230,8 +227,6 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& pre, OccupancyGridMap& map)
 		flow_x.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_y;
 	}
 
-
-
     //そのまま使える
 	cv::Mat magnitude, angle;
 	cv::cartToPolar(flow_x, flow_y, magnitude, angle, true);
@@ -245,7 +240,6 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& pre, OccupancyGridMap& map)
 	
 	cv::Mat hsv;
 	cv::merge(hsv_planes, 3, hsv);
-
 	cv::cvtColor(hsv, flow_bgr, cv::COLOR_HSV2BGR);
 
 	IS_SAVE_IMAGE = true;
