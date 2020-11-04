@@ -31,6 +31,16 @@ public:
     void executor(void);
     void formatter(void);
 
+
+    void bev_flow_estimator_callback(const sensor_msgs::Image& msg);
+    void bev_flow_evaluator_callback(const sensor_msgs::Image& msg);
+    double sigma(Mat & m, int i, int j, int block_size);
+    double cov(Mat & m1, Mat & m2, int i, int j, int block_size);
+    double eqm(Mat & img1, Mat & img2);
+    double calcurate_psnr(Mat & img_src, Mat & img_compressed, int block_size);
+    double calcurate_ssim(Mat & img_src, Mat & img_compressed, int block_size);
+    void compute_quality_metrics(char * file1, char * file2, int block_size, double ssim, double psnr);
+
 private:
     bool bev_flow_estimator_callback_frag = false;
     bool bev_evaluator_callback_flag = false;

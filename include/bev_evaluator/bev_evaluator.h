@@ -97,7 +97,7 @@ class Gridcell
 private:
     bool pc_callback_frag = false;
     bool odom_callback_flag = false;
-    bool person_position_callback = false;
+    bool people_position_callback = false;
     bool IS_SAVE_IMAGE = false;
 
     double current_yow;

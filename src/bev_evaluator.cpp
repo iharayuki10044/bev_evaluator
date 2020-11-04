@@ -32,7 +32,7 @@ void BEVEvaluator::executor(void)
 	while(ros::ok()){
 
         
-        if(pc_callback_flag && odm_callback_frag){
+        if(pc_callback_flag && odm_callback_frag　&& people_position_callback){
             std::cout << "people data calculate" << std::endl;
     		calcurate_people_vector(current_people_data, pre_people_data);
 			generate_occupancy_grid_map(cloud_ptr, occupancy_grid_map);
@@ -71,12 +71,14 @@ void BEVEvaluator::executor(void)
 			/* cv::imwrite("/home/amsl/ros_catkin_ws/src/bev_converter/bev_img/data_" + std::to_string(SAVE_NUMBER) + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params); */
 			cv::imwrite(folder_name + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params);
 			/* std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl; */
+
 			j++;
 
 		}
 
 		pc_callback_flag ＝false;
         odom_callback_flag = false;
+		people_position_callback_flag = false;
 
 		r.sleep();
 		ros::spinOnce();
@@ -91,6 +93,7 @@ void BEVEvaluator::formatter(void)
     grid_size = RANGE / GRID_NUM;
     cmd_vel_callback_flag = false;
     pc_callback_flag = false;
+	people_position_callback_flag = false;
 	IS_SAVE_IMAGE = false;
 }
 
@@ -135,7 +138,7 @@ void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr　&msg)
 	}
 }
 
-void BEVEvaluator::person_position_callback(const pedsim_msgs::TrackedPersons::Constptr& msg)
+void BEVEvaluator::people_position_callback(const pedsim_msgs::TrackedPersons::Constptr& msg)
 {
 	pedsim_msgs::TrackedPersons tracked_person;
 	for(int i=0;i<PEOPLE_NUM;i++){
@@ -143,7 +146,7 @@ void BEVEvaluator::person_position_callback(const pedsim_msgs::TrackedPersons::C
 	current_people_data[i].x = tracked_person.pose.x;
 	current_people_data[i].y = tracked_person.pose.y;
 	}
-	person_position_callback = true;
+	people_position_callback = true;
 }
 
 void BEVEvaluator::transform_cloudpoint_coordinate(void)

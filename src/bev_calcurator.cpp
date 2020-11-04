@@ -131,13 +131,9 @@ double BEVECalcurator::calcurate_ssim(Mat & img_src, Mat & img_compressed, int b
 	return ssim;
 }
 
-void BEVECalcurator::compute_quality_metrics(char * file1, char * file2, int block_size, double ssim, double psnr)
+void BEVECalcurator::compute_quality_metrics(Mat image_src, Mat image_composed, int block_size, double ssim, double psnr)
 {
-	Mat img_src;
-	Mat img_compressed;
-	// Loading pictures
-	img_src = imread(file1, CV_LOAD_IMAGE_GRAYSCALE);
-	img_compressed = imread(file2, CV_LOAD_IMAGE_GRAYSCALE);
+
 	img_src.convertTo(img_src, CV_64F);
 	img_compressed.convertTo(img_compressed, CV_64F);
 	int height_o = img_src.rows;
