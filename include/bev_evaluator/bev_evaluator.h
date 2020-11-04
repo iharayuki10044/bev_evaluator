@@ -35,7 +35,6 @@
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
 
-
 class BEVEvaluator
 {
 public:
@@ -52,7 +51,6 @@ class People
     {
     public:
         People(void);
-        int point_hit_num;
         double point_x;
         double point_y;
         double length;
@@ -76,24 +74,23 @@ class Gridcell
     };
     typedef std::vector<Gridcell> OccupancyGridMap;
 
-    bool is_valid_point(double x, double y);
+    BEVEvaluator(void);
 
+    bool is_valid_point(double x, double y);
     int get_index_from_xy(const double x, const double y);
     int get_x_index_from_index(const int index);
     int get_y_index_from_index(const int index);
     double get_x_from_index(const int index);
     double get_y_from_index(const int index);
 
-    void GroundTruth(void);
     void executor(void);
     void formatter(void);
     void pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg);
     void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
-    void calcurate_affinematrix(Eigen::Vector3d , double, Eigen::Vector3d, double);
-    void transform_cloudpoint_coordinate(void);
     void calculation_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
     void ogm_initializer(OccupancyGridMap&);
+    void generate_occupancy_grid_map(const CloudXYZINPtr&, OccupancyGridMap&);
     cv::Mat generate_bev_image(PeopleData&);
 
 
@@ -138,4 +135,3 @@ private:
 }
 
 #endif
-

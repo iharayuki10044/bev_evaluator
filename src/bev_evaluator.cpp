@@ -92,21 +92,6 @@ void BEVEvaluator::formatter(void)
     cmd_vel_callback_flag = false;
     pc_callback_flag = false;
 	IS_SAVE_IMAGE = false;
-
-	src_euqlid_3pts.points.resize(0);
-	pt0.x = 0.0;
-	pt0.y = 0.0;
-	pt0.z = 0.0;
-	pt1.x = 0.5 * RANGE;
-	pt1.y = 0.0;
-	pt1.z = 0.0;
-	pt2.x = 0.0;
-	pt2.y = 0.5 * RANGE;
-	pt2.z = 0.0;
-	src_euqlid_3pts.points.push_back(pt0);
-	src_euqlid_3pts.points.push_back(pt1);
-	src_euqlid_3pts.points.push_back(pt2);
-
 }
 
 void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -153,31 +138,12 @@ void BEVEvaluator::cmd_vel_callback(const geometry_msgs::Twist::ConstPtr　&msg)
 void BEVEvaluator::person_position_callback(const pedsim_msgs::TrackedPersons::Constptr& msg)
 {
 	pedsim_msgs::TrackedPersons tracked_person;
-	int id = tracked_person.track_id;
-
-	pre_people_data[id] = current_people_data[id];
-	current_people_data[id].x = tracked_person.pose.x;
-	current_people_data[id].y = tracked_person.pose.y;
-
+	for(int i=0;i<PEOPLE_NUM;i++){
+	pre_people_data[i] = current_people_data[i];
+	current_people_data[i].x = tracked_person.pose.x;
+	current_people_data[i].y = tracked_person.pose.y;
+	}
 	person_position_callback = true;
-}
-
-void BEVEvaluator::calcurate_affinematrix(Eigen::Vector3d current_position, double current_yaw, Eigen::Vector3d pre_position, double pre_yaw)
-{
-	/* std::cout << "BEVImageGenerator::cropped_transformed_grid_img_generator" << std::endl; */
-	double d_yaw = current_yaw - pre_yaw;
-	d_yaw = atan2()sin(d_yaw), cos(d_yaw));
-	Eigen::Matrix3d r;
-	r = Eigen::AngleAxisd(-d_yaw, Eigen::Vector3d::UnitZ());
-
-	Eigen::Matrix3d pre_yaw_rotation;
-	pre_yaw_rotation = Eigen::AngleAxisd(-pre_yaw, Eigen::Vector3d::UnitZ());
-	Eigen::Vector3d _current_position = pre_yaw_rotation * current_position;
-	Eigen::Vector3d _pre_position = pre_yaw_rotation * pre_position;
-	Eigen::Translation<double, 3> t(_pre_position - _current_position);
-
-	affine_transform = t * r;
-	/* std::cout << "affine transformation: \n" << affine_transform.translation() << "\n" << affine_transform.rotation().eulerAngles(0,1,2) << std::endl; */
 }
 
 void BEVEvaluator::transform_cloudpoint_coordinate(void)
@@ -296,11 +262,11 @@ void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZINPtr& cloud_ptr, O
 			continue;
 		}
 
-	int index = get_index_from_xy(p.x, p.y);
-	map[index].is_people_exist = true;
-	map[index].hit_people_id = cloud_ptr->intensity;
-	map[index].index_x = get_x_index_from_index(index);
-	map[index].index_y = get_y_index_from_index(index);
+		int index = get_index_from_xy(p.x, p.y);
+		map[index].is_people_exist = true;
+		map[index].hit_people_id = cloud_ptr->intensity;
+		map[index].index_x = get_x_index_from_index(index);
+		map[index].index_y = get_y_index_from_index(index);
 	}
 
 }
