@@ -17,8 +17,7 @@ void BEVCalcurator::executor(void)
 	while(ros::ok()){
 
         if(bev_flow_estimator_callback_flag && bev_flow_evaluator_callback_flag){
-            calucurate_ssim();
-            calucurate_mse();
+            compute_quality_metrics(bev_flow_image, bev_groundtruth, int block_size,ssim, psnr);
         }
 
 		bev_flow_estimator_callback_flag ＝false;
@@ -82,40 +81,40 @@ double BEVECalcurator::cov(Mat & m1, Mat & m2, int i, int j, int block_size)
 	double avg_o 	= mean(m2_tmp)[0]; // E(Y)
 	double sd_ro = avg_ro - avg_o * avg_r; // E(XY) - E(X)E(Y)
 	return sd_ro;
-	}
+}
 
-	// Mean squared error
+// Mean squared error
 double BEVECalcurator::eqm(Mat & img1, Mat & img2)
 {
 	int i, j;
 	double eqm = 0;
 	int height = img1.rows;
 	int width = img1.cols;
-	for (i = 0; i < height; i++)
-		for (j = 0; j < width; j++)
+	for (i = 0; i < height; i++){
+		for (j = 0; j < width; j++){
 			eqm += (img1.at<double>(i, j) - img2.at<double>(i, j)) * (img1.at<double>(i, j) - img2.at<double>(i, j));
+        }
+    }
+
 	eqm /= height * width;
 	return eqm;
-	}
-
+}
 
 //Compute the PSNR between 2 images
-double BEVECalcurator::psnr(Mat & img_src, Mat & img_compressed, int block_size)
+double BEVECalcurator::calcurate_psnr(Mat & img_src, Mat & img_compressed, int block_size)
 {
 	int D = 255;
 	return (10 * log10((D*D)/eqm(img_src, img_compressed)));
 }
 
 //Compute the SSIM between 2 images
-double BEVECalcurator::ssim(Mat & img_src, Mat & img_compressed, int block_size, bool show_progress = false)
+double BEVECalcurator::calcurate_ssim(Mat & img_src, Mat & img_compressed, int block_size)
 {
 	double ssim = 0;
 	int nbBlockPerHeight 	= img_src.rows / block_size;
 	int nbBlockPerWidth 	= img_src.cols / block_size;
-	for (int k = 0; k < nbBlockPerHeight; k++)
-	{
-		for (int l = 0; l < nbBlockPerWidth; l++)
-		{
+	for (int k = 0; k < nbBlockPerHeight; k++){
+		for (int l = 0; l < nbBlockPerWidth; l++){
 			int m = k * block_size;
 			int n = l * block_size;
 			double avg_o 	= mean(img_src(Range(k, k + block_size), Range(l, l + block_size)))[0];
@@ -126,16 +125,9 @@ double BEVECalcurator::ssim(Mat & img_src, Mat & img_compressed, int block_size,
 			ssim += ((2 * avg_o * avg_r + C1) * (2 * sigma_ro + C2)) / ((avg_o * avg_o + avg_r * avg_r + C1) * (sigma_o * sigma_o + sigma_r * sigma_r + C2));
 			
 		}
-		// Progress
-		if (show_progress)
-			cout << "\r>>SSIM [" << (int) ((( (double)k) / nbBlockPerHeight) * 100) << "%]";
 	}
 	ssim /= nbBlockPerHeight * nbBlockPerWidth;
-	if (show_progress)
-	{
-		cout << "\r>>SSIM [100%]" << endl;
-		cout << "SSIM : " << ssim << endl;
-	}
+
 	return ssim;
 }
 
@@ -153,22 +145,20 @@ void BEVECalcurator::compute_quality_metrics(char * file1, char * file2, int blo
 	int width_o = img_src.cols;
 	int width_r = img_compressed.cols;
 	// Check pictures size
-	if (height_o != height_r || width_o != width_r)
-	{
+	if (height_o != height_r || width_o != width_r){
 		cout << "Images must have the same dimensions" << endl;
 		return;
 	}
 // Check if the block size is a multiple of height / width
-	if (height_o % block_size != 0 || width_o % block_size != 0)
-	{
+	if (height_o % block_size != 0 || width_o % block_size != 0){
 		cout 	<< "WARNING : Image WIDTH and HEIGHT should be divisible by BLOCK_SIZE for the maximum accuracy" << endl
 				<< "HEIGHT : " 		<< height_o 	<< endl
 				<< "WIDTH : " 		<< width_o	<< endl
 				<< "BLOCK_SIZE : " 	<< block_size 	<< endl
 				<< endl;
 	}
-	ssim_val = ssim(img_src, img_compressed, block_size);
-	psnr_val = psnr(img_src, img_compressed, block_size);
+	ssim = calcurate_ssim(img_src, img_compressed, block_size);
+	psnr = calcurate_psnr(img_src, img_compressed, block_size);
 	//cout << "SSIM : " << ssim_val << endl;
 	//cout << "PSNR : " << psnr_val << endl;
 }

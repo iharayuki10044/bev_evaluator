@@ -38,6 +38,10 @@ private:
 
     int IMAGE_SIZE;
     int pc_seq;
+    int block_size;
+
+    double ssim;
+    double psnr;
 
     ros::NodeHandle nh;
 	ros::Subscriber pc_subscriber;
