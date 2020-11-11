@@ -5,6 +5,7 @@ BEVEvaluator::BEVEvaluator(void)
 {
 	nh.param("RANGE", RANGE, {10.0});
     nh.param("GRID_NUM", GRID_NUM, {50});
+	nh.param("GRID_WIDTH", GRID_WIDTH, {10});
     nh.param("Hz", Hz, {1.0});
     nh.param("FLOW_IMAGE_SIZE", FLOW_IMAGE_SIZE, {50});
     nh.param("PEOPLE_NUM", PEOPLE_NUM, {30});
