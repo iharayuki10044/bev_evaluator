@@ -10,14 +10,14 @@ BEVEvaluator::BEVCalucurator(void)
 	flow_image_publisher = nh.advertise<sensor_msgs::Image>("/bev/flow_image", 10);
 }
 
-void BEVCalcurator::executor(void)
+void BEVCaluculator::executor(void)
 {
     formatter();
     ros::Rate r(Hz);
 	while(ros::ok()){
 
         if(bev_flow_estimator_callback_flag && bev_flow_evaluator_callback_flag){
-            compute_quality_metrics(bev_flow_image, bev_groundtruth, int block_size,ssim, psnr);
+            compute_quality_metrics(bev_flow_image, bev_groundtruth, int block_size, ssim, psnr);
         }
 
 		bev_flow_estimator_callback_flag ＝false;
@@ -29,7 +29,7 @@ void BEVCalcurator::executor(void)
 
 }
 
-void BEVECalcurator::formatter(void)
+void BEVECaluculator::formatter(void)
 {
 	/* std::cout << "formatter" << std::endl; */
     dt = 1.0 / Hz;
@@ -37,19 +37,19 @@ void BEVECalcurator::formatter(void)
     pc_callback_flag = false;
 }
 
-void BEVECalcurator::bev_flow_estimator_callback(const sensor_msgs::Image& msg)
+void BEVECaluculator::bev_flow_estimator_callback(const sensor_msgs::Image& msg)
 {
     bev_flow_image = *msg;
     bev_flow_estimator_callback_frag = true;
 }
 
-void BEVECalcurator::bev_flow_evaluator_callback(const sensor_msgs::Image& msg)
+void BEVECaluculator::bev_flow_evaluator_callback(const sensor_msgs::Image& msg)
 {
     bev_groundtruth = *msg;
     bev_flow_evaluator_callback_frag = true;
 }
 
-double BEVECalcurator::sigma(Mat & m, int i, int j, int block_size)
+double BEVECaluculator::sigma(Mat & m, int i, int j, int block_size)
 {
 		double sd = 0;
 
@@ -63,14 +63,13 @@ double BEVECalcurator::sigma(Mat & m, int i, int j, int block_size)
 		// E(x²)
 		double avg_2 = mean(m_squared)[0];
 
-
 		sd = sqrt(avg_2 - avg * avg);
 
 		return sd;
 }
 
 // Covariance
-double BEVECalcurator::cov(Mat & m1, Mat & m2, int i, int j, int block_size)
+double BEVECaluculator::cov(Mat & m1, Mat & m2, int i, int j, int block_size)
 {
 	Mat m3 = Mat::zeros(block_size, block_size, m1.depth());
 	Mat m1_tmp = m1(Range(i, i + block_size), Range(j, j + block_size));
@@ -84,7 +83,7 @@ double BEVECalcurator::cov(Mat & m1, Mat & m2, int i, int j, int block_size)
 }
 
 // Mean squared error
-double BEVECalcurator::eqm(Mat & img1, Mat & img2)
+double BEVECaluculator::eqm(Mat & img1, Mat & img2)
 {
 	int i, j;
 	double eqm = 0;
@@ -101,14 +100,14 @@ double BEVECalcurator::eqm(Mat & img1, Mat & img2)
 }
 
 //Compute the PSNR between 2 images
-double BEVECalcurator::calcurate_psnr(Mat & img_src, Mat & img_compressed, int block_size)
+double BEVECaluculator::caluculate_psnr(Mat & img_src, Mat & img_compressed, int block_size)
 {
 	int D = 255;
 	return (10 * log10((D*D)/eqm(img_src, img_compressed)));
 }
 
 //Compute the SSIM between 2 images
-double BEVECalcurator::calcurate_ssim(Mat & img_src, Mat & img_compressed, int block_size)
+double BEVECaluculator::caluculate_ssim(Mat & img_src, Mat & img_compressed, int block_size)
 {
 	double ssim = 0;
 	int nbBlockPerHeight 	= img_src.rows / block_size;
@@ -131,7 +130,7 @@ double BEVECalcurator::calcurate_ssim(Mat & img_src, Mat & img_compressed, int b
 	return ssim;
 }
 
-void BEVECalcurator::compute_quality_metrics(Mat image_src, Mat image_composed, int block_size, double ssim, double psnr)
+void BEVECaluculator::compute_quality_metrics(Mat image_src, Mat image_composed, int block_size, double ssim, double psnr)
 {
 
 	img_src.convertTo(img_src, CV_64F);
@@ -153,8 +152,8 @@ void BEVECalcurator::compute_quality_metrics(Mat image_src, Mat image_composed, 
 				<< "BLOCK_SIZE : " 	<< block_size 	<< endl
 				<< endl;
 	}
-	ssim = calcurate_ssim(img_src, img_compressed, block_size);
-	psnr = calcurate_psnr(img_src, img_compressed, block_size);
+	ssim = caluculate_ssim(img_src, img_compressed, block_size);
+	psnr = caluculate_psnr(img_src, img_compressed, block_size);
 	//cout << "SSIM : " << ssim_val << endl;
 	//cout << "PSNR : " << psnr_val << endl;
 }

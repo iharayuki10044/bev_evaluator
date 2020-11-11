@@ -10,7 +10,7 @@ SET(CMAKE_CXX_FLAGS "-std=c++11 -O2 -g -Wall ${CMAKE_CXX_FLAGS}")
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system
+find_package(catkin REQUIRED COMPONENTS
 	geometry_msgs
 	nav_msgs
     visualization_msgs
@@ -24,6 +24,7 @@ find_package(Boost REQUIRED COMPONENTS system
 	pcl_ros
     cv_bridge
 	image_transport
+	pedsim_msgs
     # message_generation
 )
 
@@ -168,7 +169,7 @@ add_dependencies(libbev_evaluator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_E
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(bev_evaluator src/bev_evaluator_node src/bev_evaluator_node.cpp)
+add_executable(bev_evaluator src/bev_evaluator_node.cpp src/bev_evaluator)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

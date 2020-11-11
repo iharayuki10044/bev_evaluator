@@ -27,10 +27,14 @@
 #include <pcl/filters/passthrough.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 
+#include <pedsim_msgs/TrackedPerson.h>
+#include <pedsim_msgs/TrackedPersons.h>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/superres/optical_flow.hpp>
 #include <opencv2/core/base.hpp>
 #include <opencv2/core/types.hpp>
+#include <opencv2/core.hpp>
 
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
@@ -39,18 +43,16 @@ class BEVEvaluator
 {
 public:
 
-    typedef pcl::PointXYZI PointXYZIN;
+    typedef pcl::PointXYZI PointXYZI;
     typedef pcl::PointCloud<PointXYZI> CloudXYZI;
     typedef pcl::PointCloud<PointXYZI>::Ptr CloudXYZIPtr;
     typedef pcl::PointXYZ PointXYZ;
     typedef pcl::PointCloud<PointXYZ> CloudXYZ;
     typedef pcl::PointCloud<PointXYZ>::Ptr CloudXYZPtr;
-    typedef pcl::PointCloud<PointN>::Ptr CloudNPtr;
 
 class People
     {
     public:
-        People(void);
         double point_x;
         double point_y;
         double length;
@@ -63,7 +65,6 @@ class People
 class Gridcell
     {
     public:
-        Gridcell(void);
         int index_x;
         int index_y;
         int hit_people_id;
@@ -85,25 +86,32 @@ class Gridcell
 
     void executor(void);
     void formatter(void);
-    void pc_callback(const sensor_msgs::PointCloud2ConstPtr &msg);
-    void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr& msg)
-    void calculation_people_vector(PeopleData&, PeopleData&);
+    void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
+    void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr&);
+    void tracked_person_callback(const pedsim_msgs::TrackedPersons::ConstPtr&);
+    void calculate_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
     void ogm_initializer(OccupancyGridMap&);
-    void generate_occupancy_grid_map(const CloudXYZINPtr&, OccupancyGridMap&);
-    cv::Mat generate_bev_image(PeopleData&);
-
+    void generate_occupancy_grid_map(const CloudXYZIPtr&, OccupancyGridMap&);
+    cv::Mat generate_bev_image(PeopleData&, OccupancyGridMap&);
 
 private:
-    bool pc_callback_frag = false;
-    bool odom_callback_flag = false;
-    bool people_position_callback = false;
+    bool pc_callback_flag = false;
+    bool cmd_vel_callback_flag = false;
+    bool tracked_person_callback_flag = false;
     bool IS_SAVE_IMAGE = false;
 
-    double current_yow;
-    double pre_yow;
+    double current_yaw;
+    double pre_yaw;
     double WIDTH;
     double WIDTH_2;
+    double RANGE;
+    double Hz;
+    double RESOLUTION;
+    double dt;
+    double grid_size;
+    int FLOW_IMAGE_SIZE;
+    int SAVE_NUMBER;
     int GRID_WIDTH;
     int GRID_WIDTH_2;
     int GRID_NUM;
@@ -119,19 +127,16 @@ private:
 
     ros::NodeHandle nh;
 	ros::Subscriber pc_subscriber;
-	ros::Subscriber odom_subscriber;
-	ros::Publisher bev_grid_publisher;
+	ros::Subscriber cmd_vel_subscriber;
+    ros::Subscriber tracked_person_subscriber;
+	ros::Publisher flow_image_publisher;
 
     Eigen::Vector3d current_position;
     Eigen::Vector3d pre_position;
-    Eigen::Affine3d affine_transform;
-
-	pcl::PointCloud<pcl::PointXYZ> src_euqlid_3pts;
-	pcl::PointCloud<pcl::PointXYZ> dst_euqlid_3pts;
-    //to transform pointcloud coordinate
 
     cv::Mat bev_flow_image;
 
-}
+    CloudXYZIPtr pcl_input_pc{new CloudXYZI()};
+};
 
 #endif
