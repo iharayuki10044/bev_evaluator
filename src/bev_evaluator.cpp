@@ -7,6 +7,7 @@ BEVEvaluator::BEVEvaluator(void)
     nh.param("GRID_NUM", GRID_NUM, {50});
 	nh.param("GRID_WIDTH", GRID_WIDTH, {10});
     nh.param("Hz", Hz, {1.0});
+	nh.param("WIDTH", WIDTH,{5});
     nh.param("FLOW_IMAGE_SIZE", FLOW_IMAGE_SIZE, {50});
     nh.param("PEOPLE_NUM", PEOPLE_NUM, {30});
     nh.param("SAVE_NUMBER", SAVE_NUMBER, {1});
@@ -16,6 +17,7 @@ BEVEvaluator::BEVEvaluator(void)
     GRID_NUM = GRID_WIDTH * GRID_WIDTH;
     WIDTH_2 = WIDTH / 2.0;
     GRID_WIDTH_2 = GRID_WIDTH / 2.0;
+	RESOLUTION = WIDTH / GRID_WIDTH;
 
     pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &BEVEvaluator::pc_callback, this);
     gazebo_model_states_subscriber = nh.subscribe("/gazebo/model_states", 10, &BEVEvaluator::gazebo_model_states_callback, this);
@@ -27,7 +29,7 @@ void BEVEvaluator::executor(void)
 {
     formatter();
 	int i=0;
-	int j=0;
+	//int j=0;
     ros::Rate r(Hz);
 	while(ros::ok()){
 
@@ -53,19 +55,20 @@ void BEVEvaluator::executor(void)
 			flow_image_publisher.publish(flow_img_msg);
 
 			std::cout << "complete pub img" << std::endl;
-
 			i++;
 
 			pc_callback_flag =false;
         	gazebo_model_states_callback_flag = false;
-			tracked_person_callback_flag =false;
+			tracked_person_callback_flag =false;	nh.param("RESOLUTION", RESOLUTION, {10});
 
-			std::cout << "i" << std::endl;
+			std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
+			std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
+			std::cout << "WIDTH = "<<WIDTH << std::endl;
         }
 
 		// if(IS_SAVE_IMAGE){
 		// 	std::vector<int> params(2);
-		// 			// .png
+		// 
 		// 	const std::string folder_name = PKG_PATH + "/true_data_" + std::to_string(SAVE_NUMBER);
 		// 	params[0] = CV_IMWRITE_PNG_COMPRESSION;
 		// 	params[1] = 9;
@@ -85,13 +88,9 @@ void BEVEvaluator::executor(void)
 		// 	j++;
 
 		// }
-
-
-
-		r.sleep();
-		ros::spinOnce();
-    }
-
+	r.sleep();
+	ros::spinOnce();
+	}
 }
 
 void BEVEvaluator::formatter(void)
@@ -181,7 +180,6 @@ void BEVEvaluator::ogm_initializer(OccupancyGridMap& map)
 
 cv::Mat BEVEvaluator::generate_bev_image(PeopleData& pre, OccupancyGridMap& map)
 {
-
 	std::cout << "generate_bev_image" << std::endl;
 
 	cv::Mat flow_bgr;
@@ -189,13 +187,12 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& pre, OccupancyGridMap& map)
 	cv::Mat flow_x = cv::Mat::zeros(img_size, img_size, CV_32F);
 	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
 	for(int  i = 0; i < GRID_NUM; i++){
-		if(!map[i].is_people_exist){
+		if(map[i].is_people_exist){
 			continue;
 		}
-		std::cout << "4" << std::endl;
-		int id = map[i].hit_people_id;
-		flow_y.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_x;
-		flow_x.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_y;
+	int id = map[i].hit_people_id;
+	flow_y.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_x;
+	flow_x.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_y;
 	}
 
     //そのまま使える
@@ -257,20 +254,20 @@ bool BEVEvaluator::is_valid_point(double x, double y)
 
 void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZIPtr& cloud_ptr, OccupancyGridMap& map)
 {
-	std::cout << "generate ogm!" << std::endl;
+	std::cout << "generate " << std::endl;
 	int cloud_size = cloud_ptr->points.size();
+	ogm_initializer(map);
 	for(int i=0;i<cloud_size;i++){
 		auto p = cloud_ptr->points[i];
-		if(!is_valid_point(p.x, p.y)){
-			continue;
-		}
 
-		std::cout << "receive point cloud!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-		int index = get_index_from_xy(p.x, p.y);
-		map[index].is_people_exist = true;
-		map[index].hit_people_id = cloud_ptr->points[i].intensity;
-		map[index].index_x = get_x_index_from_index(index);
-		map[index].index_y = get_y_index_from_index(index);
+		if(is_valid_point(p.x, p.y)){
+			std::cout << "receive point cloud!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+			int index = get_index_from_xy(p.x, p.y);
+			map[index].is_people_exist = true;
+			map[index].hit_people_id = cloud_ptr->points[i].intensity;
+			map[index].index_x = get_x_index_from_index(index);
+			map[index].index_y = get_y_index_from_index(index);
+		}
 	}
 	std::cout << "compelete ogm" << std::endl;
 }
