@@ -32,7 +32,7 @@ void BEVEvaluator::executor(void)
 	while(ros::ok()){
 
         std::cout << "hello !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-        if(/*pc_callback_flag &&*/ cmd_vel_callback_flag && tracked_person_callback_flag){
+        if(pc_callback_flag && cmd_vel_callback_flag && tracked_person_callback_flag){
             std::cout << "people data calculate" << std::endl;
     		calculate_people_vector(current_people_data, pre_people_data);
 			generate_occupancy_grid_map(pcl_input_pc, occupancy_grid_map);
@@ -56,28 +56,28 @@ void BEVEvaluator::executor(void)
 			tracked_person_callback_flag =false;
         }
 
-		// if(IS_SAVE_IMAGE){
-		// 	std::vector<int> params(2);
-		// 			// .png
-		// 	const std::string folder_name = PKG_PATH + "/true_data_" + std::to_string(SAVE_NUMBER);
-		// 	params[0] = CV_IMWRITE_PNG_COMPRESSION;
-		// 	params[1] = 9;
-		// 	struct stat statBuf;
-		// 		if(stat(folder_name.c_str(), &statBuf) == 0){
-		// 			std::cout << "exist dir" << std::endl;
-		// 		}else{
-		// 			std::cout << "mkdir" << std::endl;
-		// 			if(mkdir(folder_name.c_str(), 0755) != 0){
-		// 				std::cout << "mkdir error" << std::endl;
-		// 			}
-		// 		}
-		// 	/* cv::imwrite("/home/amsl/ros_catkin_ws/src/bev_converter/bev_img/data_" + std::to_string(SAVE_NUMBER) + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params); */
-		// 	cv::imwrite(folder_name + "/" + "true_flow_" + std::to_string(i) + ".png", bev_flow_image, params);
-		// 	/* std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl; */
+		if(IS_SAVE_IMAGE){
+			std::vector<int> params(2);
+					// .png
+			const std::string folder_name = PKG_PATH + "/true_data_" + std::to_string(SAVE_NUMBER);
+			params[0] = CV_IMWRITE_PNG_COMPRESSION;
+			params[1] = 9;
+			struct stat statBuf;
+				if(stat(folder_name.c_str(), &statBuf) == 0){
+					std::cout << "exist dir" << std::endl;
+				}else{
+					std::cout << "mkdir" << std::endl;
+					if(mkdir(folder_name.c_str(), 0755) != 0){
+						std::cout << "mkdir error" << std::endl;
+					}
+				}
+			/* cv::imwrite("/home/amsl/ros_catkin_ws/src/bev_converter/bev_img/data_" + std::to_string(SAVE_NUMBER) + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params); */
+			cv::imwrite(folder_name + "/" + "true_flow_" + std::to_string(i) + ".png", bev_flow_image, params);
+			/* std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl; */
 
-		// 	j++;
+			j++;
 
-		// }
+		}
 
 
 
@@ -157,7 +157,7 @@ void BEVEvaluator::calculate_people_vector(PeopleData &current, PeopleData &pre)
 
 void BEVEvaluator::initializer(void)
 {
-//	std::cout << "initializer" << std::endl;
+	std::cout << "initializer" << std::endl;
 	current_position = Eigen::Vector3d::Zero();
 	pre_position = Eigen::Vector3d::Zero();
 	current_yaw = 0.0;
@@ -183,35 +183,35 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& pre, OccupancyGridMap& map)
 
 	std::cout << "2" << std::endl;
 
-//	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
+	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
 
 	std::cout << "3" << std::endl;
 
-	// for(int  i = 0; i < GRID_NUM; i++){
-	// 	if(!map[i].is_people_exist){
-	// 		continue;
-	// 	}
-	// 	int id = map[i].hit_people_id;
-	// 	flow_y.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_x;
-	// 	flow_x.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_y;
-	// }
+	for(int  i = 0; i < GRID_NUM; i++){
+		if(!map[i].is_people_exist){
+			continue;
+		}
+		int id = map[i].hit_people_id;
+		flow_y.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_x;
+		flow_x.at<float>(map[i].index_x, map[i].index_y) = pre[id].move_vector_y;
+	}
 
-    // //そのまま使える
-	// cv::Mat magnitude, angle;
-	// cv::cartToPolar(flow_x, flow_y, magnitude, angle, true);
+    //そのまま使える
+	cv::Mat magnitude, angle;
+	cv::cartToPolar(flow_x, flow_y, magnitude, angle, true);
 
-	// cv::Mat hsv_planes[3];
-	// hsv_planes[0] = angle;
-	// cv::normalize(magnitude, magnitude, 0, 1, cv::NORM_MINMAX);
-	// /* cv::normalize(magnitude, magnitude, 1.0, 0.0, cv::NORM_L1); */
-	// hsv_planes[1] = magnitude;
-	// hsv_planes[2] = cv::Mat::ones(magnitude.size(), CV_32F);
+	cv::Mat hsv_planes[3];
+	hsv_planes[0] = angle;
+	cv::normalize(magnitude, magnitude, 0, 1, cv::NORM_MINMAX);
+	/* cv::normalize(magnitude, magnitude, 1.0, 0.0, cv::NORM_L1); */
+	hsv_planes[1] = magnitude;
+	hsv_planes[2] = cv::Mat::ones(magnitude.size(), CV_32F);
 	
-	// cv::Mat hsv;
-	// cv::merge(hsv_planes, 3, hsv);
-	// cv::cvtColor(hsv, flow_bgr, cv::COLOR_HSV2BGR);
+	cv::Mat hsv;
+	cv::merge(hsv_planes, 3, hsv);
+	cv::cvtColor(hsv, flow_bgr, cv::COLOR_HSV2BGR);
 
-	// IS_SAVE_IMAGE = true;
+	IS_SAVE_IMAGE = true;
 
     return flow_bgr;
 }
