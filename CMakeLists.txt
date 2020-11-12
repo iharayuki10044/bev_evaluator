@@ -25,6 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
 	image_transport
 	pedsim_msgs
+	gazebo_msgs
     # message_generation
 )
 

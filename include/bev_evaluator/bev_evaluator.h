@@ -30,6 +30,8 @@
 #include <pedsim_msgs/TrackedPerson.h>
 #include <pedsim_msgs/TrackedPersons.h>
 
+#include <gazebo_msgs/ModelStates.h>
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/superres/optical_flow.hpp>
 #include <opencv2/core/base.hpp>
@@ -87,7 +89,8 @@ class Gridcell
     void executor(void);
     void formatter(void);
     void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
-    void cmd_vel_callback(const geometry_msgs::Twist::ConstPtr&);
+    int find_num_from_name(const std::string& , const std::vector<std::string> &);
+    void gazebo_model_states_callback(const gazebo_msgs::ModelStates::ConstPtr &);
     void tracked_person_callback(const pedsim_msgs::TrackedPersons::ConstPtr&);
     void calculate_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
@@ -97,7 +100,7 @@ class Gridcell
 
 private:
     bool pc_callback_flag = false;
-    bool cmd_vel_callback_flag = false;
+    bool gazebo_model_states_callback_flag = false;
     bool tracked_person_callback_flag = false;
     bool IS_SAVE_IMAGE = false;
 
@@ -127,7 +130,7 @@ private:
 
     ros::NodeHandle nh;
 	ros::Subscriber pc_subscriber;
-	ros::Subscriber cmd_vel_subscriber;
+	ros::Subscriber gazebo_model_states_subscriber;
     ros::Subscriber tracked_person_subscriber;
 	ros::Publisher flow_image_publisher;
 
