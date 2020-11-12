@@ -11,13 +11,7 @@ BEVEvaluator::BEVEvaluator(void)
     nh.param("FLOW_IMAGE_SIZE", FLOW_IMAGE_SIZE, {50});
     nh.param("PEOPLE_NUM", PEOPLE_NUM, {30});
     nh.param("SAVE_NUMBER", SAVE_NUMBER, {1});
-	nh.param("CMD_VEL_TOPIC", CMD_VEL_TOPIC, {"/cmd_vel"});
 	nh.param("PKG_PATH", PKG_PATH, {"/home/amsl/ros_catkin_ws/src/bev_evaluator/bev_img"});
-
-    GRID_NUM = GRID_WIDTH * GRID_WIDTH;
-    WIDTH_2 = WIDTH / 2.0;
-    GRID_WIDTH_2 = GRID_WIDTH / 2.0;
-	RESOLUTION = WIDTH / GRID_WIDTH;
 
     pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &BEVEvaluator::pc_callback, this);
     gazebo_model_states_subscriber = nh.subscribe("/gazebo/model_states", 10, &BEVEvaluator::gazebo_model_states_callback, this);
@@ -39,7 +33,7 @@ void BEVEvaluator::executor(void)
     		calculate_people_vector(current_people_data, pre_people_data);
 
 			std::cout << "ogm" << std::endl;
-			ogm_initializer(occupancy_grid_map);
+//			ogm_initializer(occupancy_grid_map);
 			generate_occupancy_grid_map(pcl_input_pc, occupancy_grid_map);
 
             std::cout << "generate image" << std::endl;
@@ -96,12 +90,16 @@ void BEVEvaluator::executor(void)
 void BEVEvaluator::formatter(void)
 {
 	/* std::cout << "formatter" << std::endl; */
-    dt = 1.0 / Hz;
-    grid_size = RANGE / GRID_NUM;
     gazebo_model_states_callback_flag = false;
     pc_callback_flag = false;
 	tracked_person_callback_flag = false;
 	IS_SAVE_IMAGE = false;
+
+	dt = 1.0 / Hz;
+    grid_size = RANGE / GRID_NUM;GRID_NUM = GRID_WIDTH * GRID_WIDTH;
+    WIDTH_2 = WIDTH / 2.0;
+    GRID_WIDTH_2 = GRID_WIDTH / 2.0;
+	RESOLUTION = WIDTH / GRID_WIDTH;
 
 	current_people_data.resize(PEOPLE_NUM);
 	pre_people_data.resize(PEOPLE_NUM);
@@ -254,14 +252,14 @@ bool BEVEvaluator::is_valid_point(double x, double y)
 
 void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZIPtr& cloud_ptr, OccupancyGridMap& map)
 {
-	std::cout << "generate " << std::endl;
+	std::cout << "generate ogm" << std::endl;
 	int cloud_size = cloud_ptr->points.size();
 	ogm_initializer(map);
 	for(int i=0;i<cloud_size;i++){
 		auto p = cloud_ptr->points[i];
 
 		if(is_valid_point(p.x, p.y)){
-			std::cout << "receive point cloud!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+			//std::cout << "receive point cloud!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 			int index = get_index_from_xy(p.x, p.y);
 			map[index].is_people_exist = true;
 			map[index].hit_people_id = cloud_ptr->points[i].intensity;

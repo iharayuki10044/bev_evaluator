@@ -80,6 +80,7 @@ class Gridcell
     BEVEvaluator(void);
 
     bool is_valid_point(double x, double y);
+    int find_num_from_name(const std::string& , const std::vector<std::string> &);
     int get_index_from_xy(const double x, const double y);
     int get_x_index_from_index(const int index);
     int get_y_index_from_index(const int index);
@@ -89,7 +90,6 @@ class Gridcell
     void executor(void);
     void formatter(void);
     void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
-    int find_num_from_name(const std::string& , const std::vector<std::string> &);
     void gazebo_model_states_callback(const gazebo_msgs::ModelStates::ConstPtr &);
     void tracked_person_callback(const pedsim_msgs::TrackedPersons::ConstPtr&);
     void calculate_people_vector(PeopleData&, PeopleData&);
@@ -121,8 +121,7 @@ private:
     int PEOPLE_NUM;
     int pc_seq;
 
-    std::string PKG_PATH; 
-    std::string CMD_VEL_TOPIC;
+    std::string PKG_PATH;
 
     PeopleData current_people_data;
     PeopleData pre_people_data;
