@@ -297,6 +297,10 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 		if(distance < threhold){
 			Eigen::Vector2d local_position(0, 0);
 			Eigen::Vector2d global_position(cur[i].point_x, cur[i].point_y);
+
+			global_position.x() = global_position.x() -current_position.x();
+			global_position.y() = global_position.y() -current_position.y();
+
 			local_position = rotation_matrix * global_position;
 			cur[i].local_point_x = local_position.x();
 			cur[i].local_point_y = local_position.y();
@@ -305,7 +309,10 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 			if(cur[i].is_people_exist_in_local){
 				std::cout << "person is here id = "<< i <<"!"<< std::endl;
 			}
-
+			std::cout << "global_x = " << cur[i].point_x << std::endl;
+			std::cout << "global_y = " << cur[i].point_y << std::endl;
+			std::cout << "local_x = " << cur[i].local_point_x << std::endl;
+			std::cout << "local_y = " << cur[i].local_point_y << std::endl;
 		}
 	}
 }
