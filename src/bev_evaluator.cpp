@@ -293,7 +293,7 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 
 	for(int i =0;i<PEOPLE_NUM; i++){
 		cur[i].is_people_exist_in_local = false;
-		distance = calculate_2Ddistance(cur[i].point_x, current_position.x(), cur[i].point_y, current_position.y());
+		distance = calculate_2Ddistance(cur[i].point_x, cur[i].point_y, current_position.x(), current_position.y());
 		if(distance < threhold){
 			Eigen::Vector2d local_position(0, 0);
 			Eigen::Vector2d global_position(cur[i].point_x, cur[i].point_y);
@@ -303,7 +303,7 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 			cur[i].is_people_exist_in_local = true;
 
 			if(cur[i].is_people_exist_in_local){
-//				std::cout << "person is here!" << std::endl;
+				std::cout << "person is here! id = "<< i << std::endl;
 			}
 
 		}
@@ -319,7 +319,7 @@ void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 			for(int j = 0; j <PEOPLE_NUM; j++){
 				if(cur[j].is_people_exist_in_local){
 					std::cout << "suspision"<< std::endl;
-					distance = calculate_2Ddistance(map[i].pc_point_x, cur[j].local_point_x, map[i].pc_point_y, cur[j].local_point_y);
+					distance = calculate_2Ddistance(map[i].pc_point_x, map[i].pc_point_y, cur[j].local_point_x, cur[j].local_point_y);
 
 					if(distance < THREHOLD_OF_DISTANCE_BTW_PC_AND_PERSON){
 						map[i].hit_people_id = j;
