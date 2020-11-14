@@ -13,6 +13,7 @@
 #include "Eigen/Core"
 #include "Eigen/Dense"
 #include "Eigen/LU"
+//#include "Eigen/Geometry"
 
 #include <pcl/point_cloud.h>
 #include <pcl_ros/transforms.h>
@@ -60,6 +61,9 @@ class People
         double length;
         double move_vector_x;
         double move_vector_y;
+        double local_point_x;
+        double local_point_y;
+        bool is_people_exist_in_local;
     private:
     };
     typedef std::vector<People> PeopleData;
@@ -79,24 +83,27 @@ class Gridcell
 
     BEVEvaluator(void);
 
-    bool is_valid_point(double x, double y);
+    bool is_valid_point(double, double);
     int find_num_from_name(const std::string& , const std::vector<std::string> &);
-    int get_index_from_xy(const double x, const double y);
-    int get_x_index_from_index(const int index);
-    int get_y_index_from_index(const int index);
-    double get_x_from_index(const int index);
-    double get_y_from_index(const int index);
+    int get_index_from_xy(const double, const double);
+    int get_x_index_from_index(const int);
+    int get_y_index_from_index(const int);
+    double get_x_from_index(const int);
+    double get_y_from_index(const int);
+    double calculate_2Ddistance(const double, const double, const double, const double);
 
     void executor(void);
     void formatter(void);
     void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
-    void gazebo_model_states_callback(const gazebo_msgs::ModelStates::ConstPtr &);
+    void gazebo_model_states_callback(const gazebo_msgs::ModelStates::ConstPtr&);
     void tracked_person_callback(const pedsim_msgs::TrackedPersons::ConstPtr&);
     void calculate_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
     void ogm_initializer(OccupancyGridMap&);
     void generate_occupancy_grid_map(const CloudXYZIPtr&, OccupancyGridMap&);
     cv::Mat generate_bev_image(PeopleData&, OccupancyGridMap&);
+    void transform_human_coordinates_to_local(PeopleData &);
+    void macthing_pc_to_person(const CloudXYZIPtr&, PeopleData&, OccupancyGridMap&);
 
 private:
     bool pc_callback_flag = false;
@@ -104,6 +111,7 @@ private:
     bool tracked_person_callback_flag = false;
     bool IS_SAVE_IMAGE = false;
 
+    double THREHOLD_OF_DISTANCE_BTW_PC_AND_PERSON;
     double current_yaw;
     double pre_yaw;
     double WIDTH;

@@ -3,6 +3,7 @@
 BEVEvaluator::BEVEvaluator(void)
 :nh("~")
 {
+	nh.param("THREHOLD_OF_DISTANCE_BTW_PC_AND_PERSON", THREHOLD_OF_DISTANCE_BTW_PC_AND_PERSON, {0.35});
 	nh.param("RANGE", RANGE, {10.0});
     nh.param("GRID_NUM", GRID_NUM, {50});
 	nh.param("GRID_WIDTH", GRID_WIDTH, {10});
@@ -27,14 +28,16 @@ void BEVEvaluator::executor(void)
     ros::Rate r(Hz);
 	while(ros::ok()){
 
-        std::cout << "hello !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+//        std::cout << "hello !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
         if(pc_callback_flag && gazebo_model_states_callback_flag && tracked_person_callback_flag){
             std::cout << "people data calculate" << std::endl;
     		calculate_people_vector(current_people_data, pre_people_data);
 
 			std::cout << "ogm" << std::endl;
 //			ogm_initializer(occupancy_grid_map);
-			generate_occupancy_grid_map(pcl_input_pc, occupancy_grid_map);
+//			generate_occupancy_grid_map(pcl_input_pc, occupancy_grid_map);
+
+			macthing_pc_to_person(pcl_input_pc, current_people_data, occupancy_grid_map);
 
             std::cout << "generate image" << std::endl;
             bev_flow_image = generate_bev_image(pre_people_data, occupancy_grid_map);
@@ -55,9 +58,9 @@ void BEVEvaluator::executor(void)
         	gazebo_model_states_callback_flag = false;
 			tracked_person_callback_flag =false;	nh.param("RESOLUTION", RESOLUTION, {10});
 
-			std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
-			std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
-			std::cout << "WIDTH = "<<WIDTH << std::endl;
+			// std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
+			// std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
+			// std::cout << "WIDTH = "<<WIDTH << std::endl;
         }
 
 		// if(IS_SAVE_IMAGE){
@@ -117,15 +120,13 @@ void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 
 int BEVEvaluator::find_num_from_name(const std::string &name,const std::vector<std::string> &states)
 {
+	int id = 1;
     for(int i = 0; i < states.size(); i++){
 		if(states[i] == name){
-		return i;
-		}
-
-		else{
-		return 1;
+		id = i;
 		}
 	}
+	return id;
 }
 
 void BEVEvaluator::gazebo_model_states_callback(const gazebo_msgs::ModelStates::ConstPtr &msg)
@@ -170,7 +171,7 @@ void BEVEvaluator::initializer(void)
 
 void BEVEvaluator::ogm_initializer(OccupancyGridMap& map)
 {
-	std::cout << "initialize ogm" << std::endl;
+//	std::cout << "initialize ogm" << std::endl;
 	for(int i=0;i<GRID_NUM;i++){
 		map[i].is_people_exist = false;
 	}
@@ -267,5 +268,62 @@ void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZIPtr& cloud_ptr, Oc
 			map[index].index_y = get_y_index_from_index(index);
 		}
 	}
-	std::cout << "compelete ogm" << std::endl;
+	std::cout << "complete ogm" << std::endl;
+}
+
+double BEVEvaluator::calculate_2Ddistance(const double x, const double y, const double _x, const double _y)
+{
+	return sqrt(pow(x - _x, 2) + pow(y - _y, 2));
+}
+
+void BEVEvaluator::transform_human_coordinates_to_local(PeopleData &cur)
+{
+	double distance;
+	double threhold = WIDTH_2 /cos(4/M_PI);
+	Eigen::Matrix2d rotation_matrix;
+//	rotation_matrix = Eigen::RotationBase<1, 2>::toRotationMatrix(current_yaw);
+	rotation_matrix <<  cos(current_yaw), -sin(current_yaw),
+						sin(current_yaw), cos(current_yaw);
+
+	for(int i =0;i<PEOPLE_NUM; i++){
+		cur[i].is_people_exist_in_local = false;
+		distance = calculate_2Ddistance(cur[i].point_x, current_position.x(), cur[i].point_y, current_position.y());
+		if(distance < threhold){
+			Eigen::Vector2d local_position(0, 0);
+			Eigen::Vector2d global_position(cur[i].point_x, cur[i].point_y);
+			local_position = rotation_matrix * global_position;
+			cur[i].local_point_x = local_position.x();
+			cur[i].local_point_y = local_position.y();
+			cur[i].is_people_exist_in_local = true;
+		}
+	}
+}
+
+void BEVEvaluator::macthing_pc_to_person(const CloudXYZIPtr& cloud_ptr, PeopleData &cur, OccupancyGridMap& map)
+{
+	ogm_initializer(map);
+	int cloud_size = cloud_ptr->points.size();
+	for(int i=0;i<cloud_size;i++){
+		auto p = cloud_ptr->points[i];
+
+		if(is_valid_point(p.x, p.y)){
+
+			std::cout << "use this point !!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+
+			int index = get_index_from_xy(p.x, p.y);
+			map[index].is_people_exist = true;
+			map[index].index_x = get_x_index_from_index(index);
+			map[index].index_y = get_y_index_from_index(index);
+
+			for(int j=0;j<PEOPLE_NUM;j++){
+				if(cur[j].is_people_exist_in_local){
+					std::cout << "found person!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+					double distance = calculate_2Ddistance(cur[j].local_point_x, p.x, cur[j].local_point_y, p.y);
+					if(distance < THREHOLD_OF_DISTANCE_BTW_PC_AND_PERSON){
+						map[index].hit_people_id = j;
+					}
+				}
+			}
+		}
+	}
 }
