@@ -76,6 +76,8 @@ class Gridcell
         int hit_people_id;
         double move_vector_x;
         double move_vector_y;
+        double pc_point_x;
+        double pc_point_y;
         bool is_people_exist;
     private:
     };
@@ -102,8 +104,8 @@ class Gridcell
     void ogm_initializer(OccupancyGridMap&);
     void generate_occupancy_grid_map(const CloudXYZIPtr&, OccupancyGridMap&);
     cv::Mat generate_bev_image(PeopleData&, OccupancyGridMap&);
-    void transform_human_coordinates_to_local(PeopleData &);
-    void macthing_pc_to_person(const CloudXYZIPtr&, PeopleData&, OccupancyGridMap&);
+    void transform_person_coordinates_to_local(PeopleData &);
+    void macthing_pc_to_person(PeopleData&, OccupancyGridMap&);
 
 private:
     bool pc_callback_flag = false;
