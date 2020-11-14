@@ -58,7 +58,7 @@ void BEVEvaluator::executor(void)
 
 			pc_callback_flag =false;
         	gazebo_model_states_callback_flag = false;
-			tracked_person_callback_flag =false;	nh.param("RESOLUTION", RESOLUTION, {10});
+			tracked_person_callback_flag =false;
 
 			std::cout<<""<<std::endl;
 
