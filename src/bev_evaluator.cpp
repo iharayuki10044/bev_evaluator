@@ -297,7 +297,6 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 		if(distance < threhold){
 			Eigen::Vector2d local_position(0, 0);
 			Eigen::Vector2d global_position(cur[i].point_x, cur[i].point_y);
-
 			global_position.x() = global_position.x() -current_position.x();
 			global_position.y() = global_position.y() -current_position.y();
 
