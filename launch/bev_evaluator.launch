@@ -29,8 +29,6 @@
 		<param name="FLOW_IMAGE_SIZE" value="$(arg flow_image_size)" type="int"/>
 		<param name="Hz" value="$(arg hz)" type="double"/>
 		<param name="SAVE_NUMBER" value="$(arg save_data_num)" type="int"/>
-
-        <param name="WIDTH" value="3" type="double"/>
         <!-- <rosparam command="load" file="$(find cats)/config/cats_motion_param.yaml"/> -->
 	</node>
 

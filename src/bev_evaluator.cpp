@@ -34,7 +34,7 @@ void BEVEvaluator::executor(void)
     		calculate_people_vector(current_people_data, pre_people_data);
 
 			std::cout << "ogm" << std::endl;
-//			ogm_initializer(occupancy_grid_map);
+			ogm_initializer(occupancy_grid_map);
 //			generate_occupancy_grid_map(pcl_input_pc, occupancy_grid_map);
 
 			transform_person_coordinates_to_local(current_people_data);
@@ -103,10 +103,10 @@ void BEVEvaluator::formatter(void)
 	IS_SAVE_IMAGE = false;
 
 	dt = 1.0 / Hz;
-    grid_size = RANGE / GRID_NUM;GRID_NUM = GRID_WIDTH * GRID_WIDTH;
-    WIDTH_2 = WIDTH / 2.0;
+	GRID_NUM = GRID_WIDTH * GRID_WIDTH;
+    WIDTH_2 = RANGE / 2.0;
     GRID_WIDTH_2 = GRID_WIDTH / 2.0;
-	RESOLUTION = WIDTH / GRID_WIDTH;
+	RESOLUTION = RANGE / GRID_WIDTH;
 
 	current_people_data.resize(PEOPLE_NUM);
 	pre_people_data.resize(PEOPLE_NUM);
@@ -125,7 +125,8 @@ void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 int BEVEvaluator::find_num_from_name(const std::string &name,const std::vector<std::string> &states)
 {
 	int id = 1;
-    for(int i = 0; i < states.size(); i++){
+	int size = states.size();
+    for(int i = 0; i < size; i++){
 		if(states[i] == name){
 		id = i;
 		}
@@ -191,11 +192,10 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& cur, OccupancyGridMap& map)
 	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
 	for(int  i = 0; i < GRID_NUM; i++){
 		if(map[i].is_people_exist){
-			continue;
+			int id = map[i].hit_people_id;
+			flow_y.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_x;
+			flow_x.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_y;
 		}
-	int id = map[i].hit_people_id;
-	flow_y.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_x;
-	flow_x.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_y;
 	}
 
     //そのまま使える
@@ -285,7 +285,7 @@ double BEVEvaluator::calculate_2Ddistance(const double x, const double y, const 
 void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 {
 	double distance;
-	double threhold = WIDTH_2 /cos(4/M_PI);
+	double threhold = WIDTH_2 /cos(M_PI/4);
 	Eigen::Matrix2d rotation_matrix;
 //	rotation_matrix = Eigen::RotationBase<1, 2>::toRotationMatrix(current_yaw);
 	rotation_matrix <<  cos(current_yaw), -sin(current_yaw),
@@ -294,6 +294,7 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 	for(int i =0;i<PEOPLE_NUM; i++){
 		cur[i].is_people_exist_in_local = false;
 		distance = calculate_2Ddistance(cur[i].point_x, cur[i].point_y,current_position.x(), current_position.y());
+
 		if(distance < threhold){
 			Eigen::Vector2d local_position(0, 0);
 			Eigen::Vector2d global_position(cur[i].point_x, cur[i].point_y);
