@@ -47,7 +47,7 @@ void BEVEvaluator::executor(void)
 			bev_flow_image.convertTo(bev_flow_image, CV_8U, 255);
 
 			std::cout << "pub img" << std::endl;
-			cv::Mat flow_img;
+			cv::Mat flow_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
 			bev_flow_image.copyTo(flow_img);
 
 			cv::Mat true_img;
@@ -301,24 +301,14 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 {
 	double distance;
 	double threhold = WIDTH_2 /cos(M_PI/4);
-	Eigen::Matrix2d rotation_matrix;
-//	rotation_matrix = Eigen::RotationBase<1, 2>::toRotationMatrix(current_yaw);
-	rotation_matrix <<  cos(current_yaw), -sin(current_yaw),
-						sin(current_yaw), cos(current_yaw);
 
 	for(int i =0;i<PEOPLE_NUM; i++){
 		cur[i].is_people_exist_in_local = false;
 		distance = calculate_2Ddistance(cur[i].point_x, cur[i].point_y,current_position.x(), current_position.y());
 
 		if(distance < threhold){
-			Eigen::Vector2d local_position(0, 0);
-			Eigen::Vector2d global_position(cur[i].point_x, cur[i].point_y);
-			global_position.x() = global_position.x() -current_position.x();
-			global_position.y() = global_position.y() -current_position.y();
-
-			local_position = rotation_matrix * global_position;
-			cur[i].local_point_x = local_position.x();
-			cur[i].local_point_y = local_position.y();
+			cur[i].local_point_x = cur[i].point_x - current_position.x();
+			cur[i].local_point_y = cur[i].point_y - current_position.y();
 			cur[i].is_people_exist_in_local = true;
 
 			if(cur[i].is_people_exist_in_local){
