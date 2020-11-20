@@ -51,7 +51,7 @@ void BEVEvaluator::executor(void)
 			bev_flow_image.copyTo(flow_img);
 
 			cv::Mat true_img;
-			cv::flip(flow_img, true_img, -1);
+			cv::flip(flow_img, true_img, 0);
 
 			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", true_img).toImageMsg();
 			flow_img_msg->header.seq = pc_seq;
