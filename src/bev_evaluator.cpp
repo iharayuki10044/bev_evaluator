@@ -220,17 +220,17 @@ int BEVEvaluator::get_index_from_xy(const double x, const double y)
 {
     int _x = floor(x / RESOLUTION + 0.5) + GRID_WIDTH_2;
     int _y = floor(y / RESOLUTION + 0.5) + GRID_WIDTH_2;
-    return _y * GRID_WIDTH + _x;
+    return _y + _x * GRID_WIDTH;
 }
 
 int BEVEvaluator::get_x_index_from_index(const int index)
 {
-    return index % GRID_WIDTH;
+    return index / GRID_WIDTH;
 }
 
 int BEVEvaluator::get_y_index_from_index(const int index)
 {
-    return index / GRID_WIDTH;
+    return index % GRID_WIDTH;
 }
 
 double BEVEvaluator::get_x_from_index(const int index)
@@ -291,9 +291,16 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 	rotation_matrix <<  cos(current_yaw), -sin(current_yaw),
 						sin(current_yaw), cos(current_yaw);
 
+	std::cout << "WIDTH_2 = " << WIDTH_2 << std::endl;
+	std::cout << "threhold = " << threhold << std::endl;
+
 	for(int i =0;i<PEOPLE_NUM; i++){
 		cur[i].is_people_exist_in_local = false;
 		distance = calculate_2Ddistance(cur[i].point_x, cur[i].point_y,current_position.x(), current_position.y());
+
+		std::cout << "" << std::endl;
+		std::cout << "person = " << i << std::endl;
+		std::cout << "distance = " << distance << std::endl;
 
 		if(distance < threhold){
 			Eigen::Vector2d local_position(0, 0);
