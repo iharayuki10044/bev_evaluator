@@ -49,8 +49,13 @@ void BEVEvaluator::executor(void)
 			std::cout << "pub img" << std::endl;
 			cv::Mat flow_img;
 			bev_flow_image.copyTo(flow_img);
-			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", flow_img).toImageMsg();
+
+			cv::Mat true_img;
+			cv::flip(flow_img, true_img, -1);
+
+			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", true_img).toImageMsg();
 			flow_img_msg->header.seq = pc_seq;
+
 			flow_image_publisher.publish(flow_img_msg);
 
 			std::cout << "complete pub img" << std::endl;
@@ -191,10 +196,13 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& cur, OccupancyGridMap& map)
 	cv::Mat flow_x = cv::Mat::zeros(img_size, img_size, CV_32F);
 	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
 	for(int  i = 0; i < GRID_NUM; i++){
-		if(map[i].is_people_exist){
-			int id = map[i].hit_people_id;
-			flow_y.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_x;
-			flow_x.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_y;
+		if(map[i].is_people_exist && (map[i].hit_people_id < PEOPLE_NUM)){
+			//int id = map[i].hit_people_id;
+			// flow_x.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_x;
+			// flow_y.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_y;
+			flow_x.at<float>(map[i].index_x, map[i].index_y) = map[i].move_vector_x;
+			flow_y.at<float>(map[i].index_x, map[i].index_y) = map[i].move_vector_y;
+		
 		}
 	}
 
@@ -260,6 +268,9 @@ void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZIPtr& cloud_ptr, Oc
 	std::cout << "generate ogm" << std::endl;
 	int cloud_size = cloud_ptr->points.size();
 	ogm_initializer(map);
+
+	int counter = 0;
+
 	for(int i=0;i<cloud_size;i++){
 		auto p = cloud_ptr->points[i];
 
@@ -271,10 +282,14 @@ void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZIPtr& cloud_ptr, Oc
 			map[index].index_y = get_y_index_from_index(index);
 			map[index].pc_point_x = p.x;
 			map[index].pc_point_y = p.y;
+			map[index].hit_people_id = PEOPLE_NUM +1;
+			
+			counter++;
 
 		}
 	}
 	std::cout << "complete ogm" << std::endl;
+	std::cout << "counter = " << counter << std::endl;
 }
 
 double BEVEvaluator::calculate_2Ddistance(const double x, const double y, const double _x, const double _y)
@@ -291,16 +306,9 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 	rotation_matrix <<  cos(current_yaw), -sin(current_yaw),
 						sin(current_yaw), cos(current_yaw);
 
-	std::cout << "WIDTH_2 = " << WIDTH_2 << std::endl;
-	std::cout << "threhold = " << threhold << std::endl;
-
 	for(int i =0;i<PEOPLE_NUM; i++){
 		cur[i].is_people_exist_in_local = false;
 		distance = calculate_2Ddistance(cur[i].point_x, cur[i].point_y,current_position.x(), current_position.y());
-
-		std::cout << "" << std::endl;
-		std::cout << "person = " << i << std::endl;
-		std::cout << "distance = " << distance << std::endl;
 
 		if(distance < threhold){
 			Eigen::Vector2d local_position(0, 0);
@@ -328,11 +336,18 @@ void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 {
 	for(int i = 0; i < PEOPLE_NUM; i++){
 		if(cur[i].is_people_exist_in_local){
-			std::cout << "suspision"<< std::endl;
 			int index;
 			index = get_index_from_xy(cur[i].local_point_x, cur[i].local_point_y);
+			std::cout << "id = " << i << std::endl;
 			std::cout << "index = " << index << std::endl;
 			map[index].hit_people_id = i;
+
+			map[index].is_people_exist = true;
+			map[index].index_x = get_x_index_from_index(index);
+			map[index].index_y = get_y_index_from_index(index);
+			map[index].move_vector_x = cur[i].move_vector_x;
+			map[index].move_vector_y = cur[i].move_vector_y;
+
 			double x ,y;
 			x = get_x_from_index(index);
 			y = get_y_from_index(index);
