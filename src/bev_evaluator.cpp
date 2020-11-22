@@ -23,8 +23,6 @@ BEVEvaluator::BEVEvaluator(void)
 void BEVEvaluator::executor(void)
 {
     formatter();
-	int i=0;
-	//int j=0;
     ros::Rate r(Hz);
 	while(ros::ok()){
 
@@ -35,10 +33,7 @@ void BEVEvaluator::executor(void)
 
 			std::cout << "ogm" << std::endl;
 			ogm_initializer(occupancy_grid_map);
-//			generate_occupancy_grid_map(pcl_input_pc, occupancy_grid_map);
-
 			transform_person_coordinates_to_local(current_people_data);
-			generate_occupancy_grid_map(pcl_input_pc, occupancy_grid_map);
 			macthing_pc_to_person(current_people_data, occupancy_grid_map);
 
             std::cout << "generate image" << std::endl;
@@ -50,16 +45,15 @@ void BEVEvaluator::executor(void)
 			cv::Mat flow_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
 			bev_flow_image.copyTo(flow_img);
 
-			cv::Mat true_img;
-			cv::flip(flow_img, true_img, 0);
+			// cv::Mat true_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
+			// cv::flip(flow_img, true_img, 0);
 
-			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", true_img).toImageMsg();
+			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", bev_flow_image).toImageMsg();
 			flow_img_msg->header.seq = pc_seq;
 
 			flow_image_publisher.publish(flow_img_msg);
 
 			std::cout << "complete pub img" << std::endl;
-			i++;
 
 			pc_callback_flag =false;
         	gazebo_model_states_callback_flag = false;
@@ -67,33 +61,16 @@ void BEVEvaluator::executor(void)
 
 			std::cout<<""<<std::endl;
 
-			// std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
-			// std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
-			// std::cout << "WIDTH = "<<WIDTH << std::endl;
+			std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
+			std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
+			std::cout << "GRID_WIDTH_2 = "<<GRID_WIDTH_2 << std::endl;
+			std::cout << "RANGE = "<< RANGE << std::endl;
+			std::cout << "WIDTH = "<<WIDTH << std::endl;
+			std::cout << "WIDTH_2 = "<<WIDTH_2 << std::endl;
+			std::cout << "RESOLUTION = " << RESOLUTION << std::endl;
         }
 
-		// if(IS_SAVE_IMAGE){
-		// 	std::vector<int> params(2);
-		// 
-		// 	const std::string folder_name = PKG_PATH + "/true_data_" + std::to_string(SAVE_NUMBER);
-		// 	params[0] = CV_IMWRITE_PNG_COMPRESSION;
-		// 	params[1] = 9;
-		// 	struct stat statBuf;
-		// 		if(stat(folder_name.c_str(), &statBuf) == 0){
-		// 			std::cout << "exist dir" << std::endl;
-		// 		}else{
-		// 			std::cout << "mkdir" << std::endl;
-		// 			if(mkdir(folder_name.c_str(), 0755) != 0){
-		// 				std::cout << "mkdir error" << spcl_input_pc, td::endl;
-		// 			}
-		// 		}
-		// 	/* cv::imwrite("/home/amsl/ros_catkin_ws/src/bev_converter/bev_img/data_" + std::to_string(SAVE_NUMBER) + "/" + "flow_" + std::to_string(i) + ".png", bev_flow, params); */
-		// 	cv::imwrite(folder_name + "/" + "true_flow_" + std::to_string(i) + ".png", bev_flow_image, params);
-		// 	/* std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl; */
 
-		// 	j++;
-
-		// }
 	r.sleep();
 	ros::spinOnce();
 	}
@@ -197,9 +174,6 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& cur, OccupancyGridMap& map)
 	cv::Mat flow_y = cv::Mat::zeros(img_size, img_size, CV_32F);
 	for(int  i = 0; i < GRID_NUM; i++){
 		if(map[i].is_people_exist && (map[i].hit_people_id < PEOPLE_NUM)){
-			//int id = map[i].hit_people_id;
-			// flow_x.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_x;
-			// flow_y.at<float>(map[i].index_x, map[i].index_y) = cur[id].move_vector_y;
 			flow_x.at<float>(map[i].index_x, map[i].index_y) = map[i].move_vector_x;
 			flow_y.at<float>(map[i].index_x, map[i].index_y) = map[i].move_vector_y;
 		
@@ -212,7 +186,6 @@ cv::Mat BEVEvaluator::generate_bev_image(PeopleData& cur, OccupancyGridMap& map)
 	cv::Mat hsv_planes[3];
 	hsv_planes[0] = angle;
 	cv::normalize(magnitude, magnitude, 0, 1, cv::NORM_MINMAX);
-	/* cv::normalize(magnitude, magnitude, 1.0, 0.0, cv::NORM_L1); */
 	hsv_planes[1] = magnitude;
 	hsv_planes[2] = cv::Mat::ones(magnitude.size(), CV_32F);
 	cv::Mat hsv;
@@ -228,17 +201,24 @@ int BEVEvaluator::get_index_from_xy(const double x, const double y)
 {
     int _x = floor(x / RESOLUTION + 0.5) + GRID_WIDTH_2;
     int _y = floor(y / RESOLUTION + 0.5) + GRID_WIDTH_2;
-    return _y + _x * GRID_WIDTH;
+	std::cout << "pos_x = " << x << " pos_y = " << y <<std::endl;
+
+	std::cout << "y(" << _y <<") * GRID_WIDTH(" << GRID_WIDTH <<") + x("<< _x << ") = index"<< _y * GRID_WIDTH + _x  << std::endl;
+    return _y * GRID_WIDTH + _x ;
+
+	// int _x = floor( (x + WIDTH_2) / RESOLUTION + 0.5);
+    // int _y = floor( (y + WIDTH_2) / RESOLUTION + 0.5);
+    // return _x + (_y - 1) * GRID_WIDTH;
 }
 
 int BEVEvaluator::get_x_index_from_index(const int index)
 {
-    return index / GRID_WIDTH;
+    return index % GRID_WIDTH;
 }
 
 int BEVEvaluator::get_y_index_from_index(const int index)
 {
-    return index % GRID_WIDTH;
+    return index / GRID_WIDTH;
 }
 
 double BEVEvaluator::get_x_from_index(const int index)
@@ -261,35 +241,6 @@ bool BEVEvaluator::is_valid_point(double x, double y)
     }else{
         return true;
     }
-}
-
-void BEVEvaluator::generate_occupancy_grid_map(const CloudXYZIPtr& cloud_ptr, OccupancyGridMap& map)
-{
-	std::cout << "generate ogm" << std::endl;
-	int cloud_size = cloud_ptr->points.size();
-	ogm_initializer(map);
-
-	int counter = 0;
-
-	for(int i=0;i<cloud_size;i++){
-		auto p = cloud_ptr->points[i];
-
-		if(is_valid_point(p.x, p.y)){
-			//std::cout << "receive point cloud!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-			int index = get_index_from_xy(p.x, p.y);
-			map[index].is_people_exist = true;
-			map[index].index_x = get_x_index_from_index(index);
-			map[index].index_y = get_y_index_from_index(index);
-			map[index].pc_point_x = p.x;
-			map[index].pc_point_y = p.y;
-			map[index].hit_people_id = PEOPLE_NUM +1;
-			
-			counter++;
-
-		}
-	}
-	std::cout << "complete ogm" << std::endl;
-	std::cout << "counter = " << counter << std::endl;
 }
 
 double BEVEvaluator::calculate_2Ddistance(const double x, const double y, const double _x, const double _y)
@@ -325,13 +276,14 @@ void BEVEvaluator::transform_person_coordinates_to_local(PeopleData &cur)
 void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 {
 	for(int i = 0; i < PEOPLE_NUM; i++){
-		if(cur[i].is_people_exist_in_local){
-			int index;
-			index = get_index_from_xy(cur[i].local_point_x, cur[i].local_point_y);
-			std::cout << "id = " << i << std::endl;
-			std::cout << "index = " << index << std::endl;
-			map[index].hit_people_id = i;
+		bool flag = is_valid_point(cur[i].local_point_x, cur[i].local_point_y);
 
+		if(cur[i].is_people_exist_in_local && flag){
+			int index;
+			std::cout << "=====================" << std::endl;
+			std::cout << "id = " << i << std::endl;
+			index = get_index_from_xy(cur[i].local_point_x, cur[i].local_point_y);
+			map[index].hit_people_id = i;
 			map[index].is_people_exist = true;
 			map[index].index_x = get_x_index_from_index(index);
 			map[index].index_y = get_y_index_from_index(index);
@@ -341,29 +293,14 @@ void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 			double x ,y;
 			x = get_x_from_index(index);
 			y = get_y_from_index(index);
+			
+			
+			std::cout << "index = " << index << std::endl;
 			std::cout << "x = " << x << std::endl;
 			std::cout << "y = " << y << std::endl;
+			std::cout << "index_x = " << map[index].index_x <<std::endl;
+			std::cout << "index_y = " << map[index].index_y <<std::endl;
+			std::cout << "=====================" << std::endl;
 		}
 	}
 }
-
-// void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
-// {
-// 	for(int i = 0; i < GRID_NUM; i++){
-// 		if(map[i].is_people_exist){
-// 			std::cout <<"start macthing"<< std::endl;
-// 			double distance;
-// 			for(int j = 0; j <PEOPLE_NUM; j++){
-// 				if(cur[j].is_people_exist_in_local){
-// 					std::cout << "suspision"<< std::endl;
-// 					distance = calculate_2Ddistance(map[i].pc_point_x, map[i].pc_point_y,cur[j].local_point_x, cur[j].local_point_y);
-// 					if(distance < THREHOLD_OF_DISTANCE_BTW_PC_AND_PERSON){
-// 						map[i].hit_people_id = j;
-// 						std::cout << "macthing success" << std::endl;
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-

@@ -102,7 +102,6 @@ class Gridcell
     void calculate_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
     void ogm_initializer(OccupancyGridMap&);
-    void generate_occupancy_grid_map(const CloudXYZIPtr&, OccupancyGridMap&);
     cv::Mat generate_bev_image(PeopleData&, OccupancyGridMap&);
     void transform_person_coordinates_to_local(PeopleData &);
     void macthing_pc_to_person(PeopleData&, OccupancyGridMap&);
