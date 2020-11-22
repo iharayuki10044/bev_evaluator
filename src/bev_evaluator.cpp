@@ -14,7 +14,6 @@ BEVEvaluator::BEVEvaluator(void)
     nh.param("SAVE_NUMBER", SAVE_NUMBER, {1});
 	nh.param("PKG_PATH", PKG_PATH, {"/home/amsl/ros_catkin_ws/src/bev_evaluator/bev_img"});
 
-    pc_subscriber = nh.subscribe("/cloud/dynamic", 10, &BEVEvaluator::pc_callback, this);
     gazebo_model_states_subscriber = nh.subscribe("/gazebo/model_states", 10, &BEVEvaluator::gazebo_model_states_callback, this);
 	tracked_person_subscriber = nh.subscribe("/pedsim_visualizer/tracked_persons", 10, &BEVEvaluator::tracked_person_callback, this);
 	flow_image_publisher = nh.advertise<sensor_msgs::Image>("/bev_true/true_flow_image", 10);
@@ -27,7 +26,7 @@ void BEVEvaluator::executor(void)
 	while(ros::ok()){
 
 //        std::cout << "hello !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-        if(pc_callback_flag && gazebo_model_states_callback_flag && tracked_person_callback_flag){
+        if( gazebo_model_states_callback_flag && tracked_person_callback_flag){
             std::cout << "people data calculate" << std::endl;
     		calculate_people_vector(current_people_data, pre_people_data);
 
@@ -59,7 +58,6 @@ void BEVEvaluator::executor(void)
 
 			std::cout << "complete pub img" << std::endl;
 
-			pc_callback_flag =false;
         	gazebo_model_states_callback_flag = false;
 			tracked_person_callback_flag =false;
 
@@ -84,7 +82,6 @@ void BEVEvaluator::formatter(void)
 {
 	/* std::cout << "formatter" << std::endl; */
     gazebo_model_states_callback_flag = false;
-    pc_callback_flag = false;
 	tracked_person_callback_flag = false;
 	IS_SAVE_IMAGE = false;
 
@@ -97,15 +94,6 @@ void BEVEvaluator::formatter(void)
 	current_people_data.resize(PEOPLE_NUM);
 	pre_people_data.resize(PEOPLE_NUM);
 	occupancy_grid_map.resize(GRID_NUM);
-}
-
-void BEVEvaluator::pc_callback(const sensor_msgs::PointCloud2ConstPtr& msg)
-{
-    sensor_msgs::PointCloud2 input_pc;
-	input_pc = *msg;
-    pcl::fromROSMsg(input_pc, *pcl_input_pc);
-	pc_seq = input_pc.header.seq;
-    pc_callback_flag = true;
 }
 
 int BEVEvaluator::find_num_from_name(const std::string &name,const std::vector<std::string> &states)

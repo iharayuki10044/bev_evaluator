@@ -46,13 +46,6 @@ class BEVEvaluator
 {
 public:
 
-    typedef pcl::PointXYZI PointXYZI;
-    typedef pcl::PointCloud<PointXYZI> CloudXYZI;
-    typedef pcl::PointCloud<PointXYZI>::Ptr CloudXYZIPtr;
-    typedef pcl::PointXYZ PointXYZ;
-    typedef pcl::PointCloud<PointXYZ> CloudXYZ;
-    typedef pcl::PointCloud<PointXYZ>::Ptr CloudXYZPtr;
-
 class People
     {
     public:
@@ -96,7 +89,6 @@ class Gridcell
 
     void executor(void);
     void formatter(void);
-    void pc_callback(const sensor_msgs::PointCloud2ConstPtr&);
     void gazebo_model_states_callback(const gazebo_msgs::ModelStates::ConstPtr&);
     void tracked_person_callback(const pedsim_msgs::TrackedPersons::ConstPtr&);
     void calculate_people_vector(PeopleData&, PeopleData&);
@@ -107,7 +99,6 @@ class Gridcell
     void macthing_pc_to_person(PeopleData&, OccupancyGridMap&);
 
 private:
-    bool pc_callback_flag = false;
     bool gazebo_model_states_callback_flag = false;
     bool tracked_person_callback_flag = false;
     bool IS_SAVE_IMAGE = false;
@@ -137,7 +128,6 @@ private:
     OccupancyGridMap occupancy_grid_map;
 
     ros::NodeHandle nh;
-	ros::Subscriber pc_subscriber;
 	ros::Subscriber gazebo_model_states_subscriber;
     ros::Subscriber tracked_person_subscriber;
 	ros::Publisher flow_image_publisher;
@@ -147,7 +137,6 @@ private:
 
     cv::Mat bev_flow_image;
 
-    CloudXYZIPtr pcl_input_pc{new CloudXYZI()};
 };
 
 #endif
