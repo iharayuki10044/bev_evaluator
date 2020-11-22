@@ -46,11 +46,13 @@ void BEVEvaluator::executor(void)
 			bev_flow_image.copyTo(flow_img);
 
 			cv::Mat true_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
-			cv::flip(flow_img, true_img, -1);
+			cv::rotate(flow_img, true_img, cv::ROTATE_90_CLOCKWISE);
 
-			cv::rotate(true_img, flow_img, cv::ROTATE_90_COUNTERCLOCKWISE);
+			cv::flip(true_img, flow_img, 0);
+			cv::flip(flow_img, true_img, 1);
 
-			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", flow_img).toImageMsg();
+			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", true_img).toImageMsg();
+
 			flow_img_msg->header.seq = pc_seq;
 
 			flow_image_publisher.publish(flow_img_msg);
