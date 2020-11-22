@@ -12,12 +12,6 @@
     <arg name="save_data_num" default="1"/>
 	<arg name="pkg_path" default="/home/amsl/ros_catkin_ws/src/bev_evaluator/bev_img"/>
 
-	<arg name="width" default="50.0"/>
-    <arg name="resolution" default="0.2"/>
-    <arg name="occupancy_threshold" default="0.2"/>
-    <arg name="beam_num" default="720"/>
-    <arg name="skip_scan_flag" default="false"/>
-
 	<param name="use_sim_time" value="true"/>
 
 	<node pkg="bev_evaluator" type="bev_evaluator" name="bev_evaluator" output="screen">
