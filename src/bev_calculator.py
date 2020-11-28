@@ -7,6 +7,8 @@ import tf
 import cv2
 import rospy
 from sensor_msgs.msg import Image
+from std_msgs.msg import Float32MultiArray
+
 from skimage.measure import compare_ssim as ssim
 from skimage.measure import compare_psnr as psnr
 
@@ -19,14 +21,13 @@ class BevCalculator:
 
         self.true_img = None
         self.flow_img = None
-        self.measurement_val = [0.0, 0.0]
 
         # subscriber
         true_img_sub = rospy.Subscriber('/bev_true/true_flow_image',Image ,self.true_img_callback)
         flow_img_sub = rospy.Subscriber('/bev/flow_image' ,Image ,self.flow_img_callback)
 
         # publisher
-        measurement_val_pub = rospy.Publisher('/bev_evaluate/mesurement_val', Float32MultiArray, queue_size = 10)
+        self.measurement_val_pub = rospy.Publisher('/bev_evaluate/mesurement_val', Float32MultiArray, queue_size = 10)
 
     def true_img_callback(self, data):
         self.true_img = data
@@ -37,16 +38,20 @@ class BevCalculator:
     def ssim_measurement(self, true_img, flow_img):
         return measurement(ssim, true_img, flow_img)
 
-    def psnr_measurement(self, true_img, flow_img)
+    def psnr_measurement(self, true_img, flow_img):
         return measurement(psnr, true_img, flow_img)
 
     def process(self):
         r = rospy.Rate(self.HZ)
         while not rospy.is_shutdown():
+            measurement_val = [0.0, 0.0]
+            print("calculate")
             if self.true_img is not None and self.flow_img is not None:
-                self.measurement_val[0] = ssim_measurement(self.true_img, self.flow_img)
-                self.measurement_val[1] = psnr_measurement(self.true_img, self.flow_img)
-            self.mesurement_val_pub.publish(self.measurement_val)
+                measurement_val[1] = ssim_measurement(self.true_img, self.flow_img)
+                measurement_val[2] = psnr_measurement(self.true_img, self.flow_img)
+            self.measurement_val_pub.publish(2, measurement_val)
+            print("result")
+            print(measurement_val)
             r.sleep()
 
 
