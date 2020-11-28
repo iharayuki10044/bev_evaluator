@@ -12,12 +12,6 @@
     <arg name="save_data_num" default="1"/>
 	<arg name="pkg_path" default="/home/amsl/ros_catkin_ws/src/bev_evaluator/bev_img"/>
 
-	<arg name="width" default="50.0"/>
-    <arg name="resolution" default="0.2"/>
-    <arg name="occupancy_threshold" default="0.2"/>
-    <arg name="beam_num" default="720"/>
-    <arg name="skip_scan_flag" default="false"/>
-
 	<param name="use_sim_time" value="true"/>
 
 	<node pkg="bev_evaluator" type="bev_evaluator" name="bev_evaluator" output="screen">
@@ -31,15 +25,6 @@
 		<param name="SAVE_NUMBER" value="$(arg save_data_num)" type="int"/>
         <!-- <rosparam command="load" file="$(find cats)/config/cats_motion_param.yaml"/> -->
 	</node>
-
-    <node pkg="dynamic_cloud_detector" type="dynamic_cloud_detector" name="dynamic_cloud_detector">
-        <param name="WIDTH" value="$(arg width)"/>
-        <param name="RESOLUTION" value="$(arg resolution)"/>
-        <param name="OCCUPANCY_THRESHOLD" value="$(arg occupancy_threshold)"/>
-        <param name="BEAM_NUM" value="$(arg beam_num)"/>
-        <param name="SKIP_SCAN_FLAG" value="$(arg skip_scan_flag)"/>
-		<remap from="/odom/complement" to="/odom"/>
-    </node>
 
 	<!-- optional -->
 	<!-- <include file="$(find bev_evaluator)/launch/bag_player.launch"/> -->

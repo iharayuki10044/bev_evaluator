@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="hz" default="10"/>
+
+    <node name="bev_calculator" pkg="bev_evaluator" type="bev_calculator.py" output="screen">
+        <param name="HZ" value="$(arg hz)" type="int"/>
+    </node>
+</launch>
