@@ -48,7 +48,7 @@ class BevCalculator:
         self.input_estimate_img = self.Bridge.imgmsg_to_cv2(data, "bgr8")
 
     def current_pose2d_callback(self, data):
-        self.current_yaw = data.theta *180 /math.pi
+        self.current_yaw = data.theta *180 /math.pi - 90
         while self.current_yaw < 0.0:
             self.current_yaw += 360.0
 
@@ -82,6 +82,7 @@ class BevCalculator:
             
             if self.input_flow_img is not None:
                 print("img rotate")
+                print(self.current_yaw)
                 rotation_true_img = self.image_rotator(self.input_flow_img, self.current_yaw)
                 self.output_true_img = self.image_cropper(rotation_true_img, self.MANUAL_CROP_SIZE)
                 img_msg = self.Bridge.cv2_to_imgmsg(self.output_true_img, "bgr8")

@@ -133,8 +133,11 @@ void BEVEvaluator::tracked_person_callback(const pedsim_msgs::TrackedPersons::Co
 void BEVEvaluator::calculate_people_vector(PeopleData &cur, PeopleData &pre)
 {
     for(int i=0;i<PEOPLE_NUM;i++){
-        cur[i].move_vector_x = cur[i].point_x - pre[i].point_x;
-        cur[i].move_vector_y = cur[i].point_y - pre[i].point_y;
+        // cur[i].move_vector_x = cur[i].point_x - pre[i].point_x;
+        // cur[i].move_vector_y = cur[i].point_y - pre[i].point_y;
+    
+        cur[i].move_vector_y = (cur[i].point_x - pre[i].point_x) * -1;
+        cur[i].move_vector_x = cur[i].point_y - pre[i].point_y;
     }
 }
 
@@ -298,10 +301,10 @@ void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 cv::Mat BEVEvaluator::image_fliper(cv::Mat input_img)
 {
     cv::Mat output_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
-//	cv::rotate(input_img, output_img, cv::ROTATE_90_CLOCKWISE);
+	cv::rotate(input_img, output_img, cv::ROTATE_90_CLOCKWISE);
 
-	cv::flip(input_img, output_img, 0);
-	cv::flip(output_img, input_img, 1);
+	cv::flip(output_img, input_img,  0);
+	cv::flip(input_img, output_img, 1);
 
-    return input_img;
+    return output_img;
 }
