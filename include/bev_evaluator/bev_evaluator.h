@@ -6,6 +6,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Pose2D.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
@@ -97,6 +98,7 @@ class Gridcell
     cv::Mat generate_bev_image(PeopleData&, OccupancyGridMap&);
     void transform_person_coordinates_to_local(PeopleData &);
     void macthing_pc_to_person(PeopleData&, OccupancyGridMap&);
+    cv::Mat image_fliper(cv::Mat src_img);
 
 private:
     bool gazebo_model_states_callback_flag = false;
@@ -131,9 +133,16 @@ private:
 	ros::Subscriber gazebo_model_states_subscriber;
     ros::Subscriber tracked_person_subscriber;
 	ros::Publisher flow_image_publisher;
+    ros::Publisher current_yaw_publisher;
+
+    geometry_msgs::Pose2D current_pose2D;
 
     Eigen::Vector3d current_position;
     Eigen::Vector3d pre_position;
+
+	pcl::PointXYZ pt0, pt1, pt2;
+	pcl::PointCloud<pcl::PointXYZ> src_euqlid_3pts;
+	pcl::PointCloud<pcl::PointXYZ> dst_euqlid_3pts;
 
     cv::Mat bev_flow_image;
 
