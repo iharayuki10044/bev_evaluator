@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="threhold_of_distance_btw_pc_and_person" default="0.35"/>
-    <arg name="range" default="6.0"/>
-    <arg name="grid_num" default="900"/>
-    <arg name="grid_width" default="30"/>
+    <arg name="range" default="5.0"/>
+    <arg name="grid_num" default="2500"/>
+    <arg name="grid_width" default="50"/>
 	<arg name="people_num" default="30"/>
     <arg name="flow_image_size" default="30"/>
     <arg name="hz" default="10.0"/>

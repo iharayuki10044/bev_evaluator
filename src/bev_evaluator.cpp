@@ -298,10 +298,10 @@ void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 cv::Mat BEVEvaluator::image_fliper(cv::Mat input_img)
 {
     cv::Mat output_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
-	cv::rotate(input_img, output_img, cv::ROTATE_90_CLOCKWISE);
+//	cv::rotate(input_img, output_img, cv::ROTATE_90_CLOCKWISE);
 
-	cv::flip(output_img, input_img, 0);
-	cv::flip(input_img, output_img, 1);
+	cv::flip(input_img, output_img, 0);
+	cv::flip(output_img, input_img, 1);
 
-    return output_img;
+    return input_img;
 }
