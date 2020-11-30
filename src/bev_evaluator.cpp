@@ -17,6 +17,7 @@ BEVEvaluator::BEVEvaluator(void)
     gazebo_model_states_subscriber = nh.subscribe("/gazebo/model_states", 10, &BEVEvaluator::gazebo_model_states_callback, this);
 	tracked_person_subscriber = nh.subscribe("/pedsim_visualizer/tracked_persons", 10, &BEVEvaluator::tracked_person_callback, this);
 	flow_image_publisher = nh.advertise<sensor_msgs::Image>("/bev_true/true_flow_image", 10);
+    current_yaw_publisher = nh.advertise<geometry_msgs::Pose2D>("/bev_true/current_yaw", 10);
 }
 
 void BEVEvaluator::executor(void)
@@ -44,25 +45,23 @@ void BEVEvaluator::executor(void)
 			cv::Mat flow_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
 			bev_flow_image.copyTo(flow_img);
 
-			cv::Mat true_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
-			cv::rotate(flow_img, true_img, cv::ROTATE_90_CLOCKWISE);
+            flow_img = image_fliper(flow_img);
 
-			cv::flip(true_img, flow_img, 0);
-			cv::flip(flow_img, true_img, 1);
-
-			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", true_img).toImageMsg();
+			sensor_msgs::ImagePtr flow_img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", flow_img).toImageMsg();
 
 			flow_img_msg->header.seq = pc_seq;
-
 			flow_image_publisher.publish(flow_img_msg);
-
 			std::cout << "complete pub img" << std::endl;
+
+            current_pose2D.x = current_position.x();
+            current_pose2D.y = current_position.y();
+            current_pose2D.theta = current_yaw;
+            current_yaw_publisher.publish(current_pose2D);
 
         	gazebo_model_states_callback_flag = false;
 			tracked_person_callback_flag =false;
 
 			std::cout<<""<<std::endl;
-
 			std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
 			std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
 			std::cout << "GRID_WIDTH_2 = "<<GRID_WIDTH_2 << std::endl;
@@ -134,8 +133,11 @@ void BEVEvaluator::tracked_person_callback(const pedsim_msgs::TrackedPersons::Co
 void BEVEvaluator::calculate_people_vector(PeopleData &cur, PeopleData &pre)
 {
     for(int i=0;i<PEOPLE_NUM;i++){
-        cur[i].move_vector_x = cur[i].point_x - pre[i].point_x;
-        cur[i].move_vector_y = cur[i].point_y - pre[i].point_y;
+        // cur[i].move_vector_x = cur[i].point_x - pre[i].point_x;
+        // cur[i].move_vector_y = cur[i].point_y - pre[i].point_y;
+    
+        cur[i].move_vector_y = (cur[i].point_x - pre[i].point_x) * -1;
+        cur[i].move_vector_x = cur[i].point_y - pre[i].point_y;
     }
 }
 
@@ -286,7 +288,6 @@ void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 			x = get_x_from_index(index);
 			y = get_y_from_index(index);
 			
-			
 			std::cout << "index = " << index << std::endl;
 			std::cout << "x = " << x << std::endl;
 			std::cout << "y = " << y << std::endl;
@@ -295,4 +296,15 @@ void BEVEvaluator::macthing_pc_to_person(PeopleData &cur, OccupancyGridMap& map)
 			std::cout << "=====================" << std::endl;
 		}
 	}
+}
+
+cv::Mat BEVEvaluator::image_fliper(cv::Mat input_img)
+{
+    cv::Mat output_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
+	cv::rotate(input_img, output_img, cv::ROTATE_90_CLOCKWISE);
+
+	cv::flip(output_img, input_img,  0);
+	cv::flip(input_img, output_img, 1);
+
+    return output_img;
 }
