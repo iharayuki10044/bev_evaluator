@@ -33,6 +33,9 @@ class BevCalculator:
         self.gray_true_img = None
         self.gray_estimate_img = None
 
+        self.input_estimate_seq = None
+        self.input_true_seq = None
+
         self.Bridge = CvBridge()
 
         # subscriber
@@ -46,10 +49,12 @@ class BevCalculator:
 
     def true_img_callback(self, data):
         self.input_flow_img = self.Bridge.imgmsg_to_cv2(data, "bgr8")
+        self.input_true_seq = self.data.header.seq
 
     def flow_img_callback(self, data):
         self.input_estimate_img = self.Bridge.imgmsg_to_cv2(data, "bgr8")
         self.gray_estimate_img = rgb2gray(self.input_estimate_img)
+        self.input_estimate_seq = self.data.header.seq
 
     def current_pose2d_callback(self, data):
         self.current_yaw = data.theta *180 /math.pi - 90
