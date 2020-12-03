@@ -16,6 +16,7 @@ BEVEvaluator::BEVEvaluator(void)
 
     gazebo_model_states_subscriber = nh.subscribe("/gazebo/model_states", 10, &BEVEvaluator::gazebo_model_states_callback, this);
 	tracked_person_subscriber = nh.subscribe("/pedsim_visualizer/tracked_persons", 10, &BEVEvaluator::tracked_person_callback, this);
+    velodyne_points_subscriber = nh.subscribe("velodyne_points", 10, &BEVEvaluator::velodyne_points_callback, this);
 	flow_image_publisher = nh.advertise<sensor_msgs::Image>("/bev_true/true_flow_image", 10);
     current_yaw_publisher = nh.advertise<geometry_msgs::Pose2D>("/bev_true/current_yaw", 10);
 }
@@ -28,20 +29,20 @@ void BEVEvaluator::executor(void)
 
 //        std::cout << "hello !!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
         if( gazebo_model_states_callback_flag && tracked_person_callback_flag){
-            std::cout << "people data calculate" << std::endl;
+//            std::cout << "people data calculate" << std::endl;
     		calculate_people_vector(current_people_data, pre_people_data);
 
-			std::cout << "ogm" << std::endl;
+//			std::cout << "ogm" << std::endl;
 			ogm_initializer(occupancy_grid_map);
 			transform_person_coordinates_to_local(current_people_data);
 			macthing_pc_to_person(current_people_data, occupancy_grid_map);
 
-            std::cout << "generate image" << std::endl;
+//            std::cout << "generate image" << std::endl;
             bev_flow_image = generate_bev_image(current_people_data, occupancy_grid_map);
 
 			bev_flow_image.convertTo(bev_flow_image, CV_8U, 255);
 
-			std::cout << "pub img" << std::endl;
+//			std::cout << "pub img" << std::endl;
 			cv::Mat flow_img = cv::Mat::zeros(GRID_WIDTH, GRID_WIDTH, CV_32F);
 			bev_flow_image.copyTo(flow_img);
 
@@ -61,14 +62,15 @@ void BEVEvaluator::executor(void)
         	gazebo_model_states_callback_flag = false;
 			tracked_person_callback_flag =false;
 
-			std::cout<<""<<std::endl;
-			std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
-			std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
-			std::cout << "GRID_WIDTH_2 = "<<GRID_WIDTH_2 << std::endl;
-			std::cout << "RANGE = "<< RANGE << std::endl;
-			std::cout << "WIDTH = "<<WIDTH << std::endl;
-			std::cout << "WIDTH_2 = "<<WIDTH_2 << std::endl;
-			std::cout << "RESOLUTION = " << RESOLUTION << std::endl;
+            std::cout << "seq = " <<flow_img_msg->header.seq << std::endl;
+			// std::cout <<""<<std::endl;
+			// std::cout << "RESOLUTION = "<<RESOLUTION << std::endl;
+			// std::cout << "GRID_WIDTH = "<<GRID_WIDTH << std::endl;
+			// std::cout << "GRID_WIDTH_2 = "<<GRID_WIDTH_2 << std::endl;
+			// std::cout << "RANGE = "<< RANGE << std::endl;
+			// std::cout << "WIDTH = "<<WIDTH << std::endl;
+			// std::cout << "WIDTH_2 = "<<WIDTH_2 << std::endl;
+			// std::cout << "RESOLUTION = " << RESOLUTION << std::endl;
         }
 
 
@@ -82,6 +84,7 @@ void BEVEvaluator::formatter(void)
 	/* std::cout << "formatter" << std::endl; */
     gazebo_model_states_callback_flag = false;
 	tracked_person_callback_flag = false;
+    vp_callback_flag = false;
 	IS_SAVE_IMAGE = false;
 
 	dt = 1.0 / Hz;
@@ -128,6 +131,13 @@ void BEVEvaluator::tracked_person_callback(const pedsim_msgs::TrackedPersons::Co
 	current_people_data[i].point_y = tracked_person.tracks[i].pose.pose.position.y;
 	}
 	tracked_person_callback_flag = true;
+}
+
+void BEVEvaluator::velodyne_points_callback(const sensor_msgs::PointCloud2::ConstPtr &msg)
+{
+    sensor_msgs::PointCloud2 input_pc = *msg;
+    pc_seq = input_pc.header.seq;
+    vp_callback_flag = true;
 }
 
 void BEVEvaluator::calculate_people_vector(PeopleData &cur, PeopleData &pre)
