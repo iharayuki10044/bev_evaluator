@@ -11,10 +11,10 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import Pose2D
 
-from skimage.measure import compare_ssim as ssim
-from skimage.measure import compare_psnr as psnr
+from skimage.measure import compare_ssim, compare_psnr
+from skimage.color import rgb2gray
 
-import openpyxl
+import csv
 
 class BevCalculator:
     def __init__(self):
@@ -23,12 +23,15 @@ class BevCalculator:
         # param
         self.HZ = rospy.get_param("~HZ", 10)
         self.MANUAL_CROP_SIZE = rospy.get_param("~MANUAL_CROP_SIZE", 5)
-        self.excel_file_name = rospy.get_param("EXCEL_FILE_NAME", "/records/records.xlsx")
+        self.EXCEL_FILE_NAME = rospy.get_param("EXCEL_FILE_NAME", "records/records.xlsx")
+        self.SAMPLE_NUM = rospy.get_param("SAMPLE_NUM", 100)
 
         self.input_estimate_img = None
         self.input_flow_img = None
         self.output_true_img = None
         self.current_yaw = None
+        self.gray_true_img = None
+        self.gray_estimate_img = None
 
         self.Bridge = CvBridge()
 
@@ -46,17 +49,16 @@ class BevCalculator:
 
     def flow_img_callback(self, data):
         self.input_estimate_img = self.Bridge.imgmsg_to_cv2(data, "bgr8")
+        self.gray_estimate_img = rgb2gray(self.input_estimate_img)
 
     def current_pose2d_callback(self, data):
         self.current_yaw = data.theta *180 /math.pi - 90
         while self.current_yaw < 0.0:
             self.current_yaw += 360.0
 
-    def ssim_measurement(self, true_img, flow_img):
-        return measurement(ssim, true_img, flow_img)
-
-    def psnr_measurement(self, true_img, flow_img):
-        return measurement(psnr, true_img, flow_img)
+    def measurement(self, func, **kwargs):
+        val = func(kwargs["img1"], kwargs["img2"])
+        return val
 
     def image_rotator(self, input_img, angle):
         height = input_img.shape[0]
@@ -76,8 +78,7 @@ class BevCalculator:
 
     def process(self):
         r = rospy.Rate(self.HZ)
-        # book = openpyxl.load_workbook(filename=self.excel_file_name)
-        # i = 0
+        i = 1
         while not rospy.is_shutdown():
             
             if self.input_flow_img is not None:
@@ -87,17 +88,22 @@ class BevCalculator:
                 self.output_true_img = self.image_cropper(rotation_true_img, self.MANUAL_CROP_SIZE)
                 img_msg = self.Bridge.cv2_to_imgmsg(self.output_true_img, "bgr8")
                 self.true_flow_img_pub.publish(img_msg)
+                self.gray_true_img = rgb2gray(self.output_true_img)
             
-            measurement_val = [0.0, 0.0]
-            if self.input_estimate_img is not None:
-                measurement_val[1] = self.ssim_measurement(self.output_true_img, self.input_estimate_img)
-                measurement_val[2] = self.psnr_measurement(self.output_true_img, self.input_estimate_img)
-                # sheet.cell(row=i, column=1).value = measurement_val[1]
-                # sheet.cell(row=i, column=2).value = measurement_val[2]
-                # i += 1
+            measurement_val = [2, 0.0, 0.0]
+            if self.SAMPLE_NUM > i and self.gray_estimate_img is not None:
+                print("measurement")
+                measurement_val[1] = self.measurement(compare_ssim, img1 = self.gray_true_img, img2 = self.gray_estimate_img)
+                measurement_val[2] = self.measurement(compare_psnr, img1 = self.gray_true_img, img2 = self.gray_estimate_img)
                 self.measurement_val_pub.publish(2, measurement_val)
                 print("result")
                 print(measurement_val)
+                
+                if i < self.SAMPLE_NUM:
+                    with open("records/records.csv", "a") as records:
+                        writer = csv.writer(records)
+                        writer.writerow(measurement_val)
+                    i += 1
             r.sleep()
 
 
