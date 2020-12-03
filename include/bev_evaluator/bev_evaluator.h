@@ -92,6 +92,7 @@ class Gridcell
     void formatter(void);
     void gazebo_model_states_callback(const gazebo_msgs::ModelStates::ConstPtr&);
     void tracked_person_callback(const pedsim_msgs::TrackedPersons::ConstPtr&);
+    void velodyne_points_callback(const sensor_msgs::PointCloud2::ConstPtr&);
     void calculate_people_vector(PeopleData&, PeopleData&);
     void initializer(void);
     void ogm_initializer(OccupancyGridMap&);
@@ -103,6 +104,7 @@ class Gridcell
 private:
     bool gazebo_model_states_callback_flag = false;
     bool tracked_person_callback_flag = false;
+    bool vp_callback_flag = false;
     bool IS_SAVE_IMAGE = false;
 
     double THREHOLD_OF_DISTANCE_BTW_PC_AND_PERSON;
@@ -132,6 +134,7 @@ private:
     ros::NodeHandle nh;
 	ros::Subscriber gazebo_model_states_subscriber;
     ros::Subscriber tracked_person_subscriber;
+    ros::Subscriber velodyne_points_subscriber;
 	ros::Publisher flow_image_publisher;
     ros::Publisher current_yaw_publisher;
 
