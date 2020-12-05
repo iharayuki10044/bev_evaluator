@@ -23,7 +23,7 @@ class BevCalculator:
         # param
         self.HZ = rospy.get_param("~HZ", 10)
         self.MANUAL_CROP_SIZE = rospy.get_param("~MANUAL_CROP_SIZE", 5)
-        self.EXCEL_FILE_NAME = rospy.get_param("EXCEL_FILE_NAME", "records/records.xlsx")
+        self.EXCEL_FILE_NAME = rospy.get_param("EXCEL_FILE_NAME", "/home/amsl/ihara_records/records.csv")
         self.SAMPLE_NUM = rospy.get_param("SAMPLE_NUM", 100)
 
         self.input_estimate_img = None
@@ -49,12 +49,12 @@ class BevCalculator:
 
     def true_img_callback(self, data):
         self.input_flow_img = self.Bridge.imgmsg_to_cv2(data, "bgr8")
-        self.input_true_seq = self.data.header.seq
+        self.input_true_seq = data.header.seq
 
     def flow_img_callback(self, data):
         self.input_estimate_img = self.Bridge.imgmsg_to_cv2(data, "bgr8")
         self.gray_estimate_img = rgb2gray(self.input_estimate_img)
-        self.input_estimate_seq = self.data.header.seq
+        self.input_estimate_seq = data.header.seq
 
     def current_pose2d_callback(self, data):
         self.current_yaw = data.theta *180 /math.pi - 90
@@ -98,6 +98,8 @@ class BevCalculator:
             measurement_val = [2, 0.0, 0.0]
             if self.SAMPLE_NUM > i and self.gray_estimate_img is not None:
                 print("measurement")
+                print("flow seq = {0}", self.input_estimate_seq)
+                print("ture seq = {0}", self.input_true_seq)
                 measurement_val[1] = self.measurement(compare_ssim, img1 = self.gray_true_img, img2 = self.gray_estimate_img)
                 measurement_val[2] = self.measurement(compare_psnr, img1 = self.gray_true_img, img2 = self.gray_estimate_img)
                 self.measurement_val_pub.publish(2, measurement_val)
@@ -105,7 +107,7 @@ class BevCalculator:
                 print(measurement_val)
                 
                 if i < self.SAMPLE_NUM:
-                    with open("records/records.csv", "a") as records:
+                    with open(self.EXCEL_FILE_NAME, "a") as records:
                         writer = csv.writer(records)
                         writer.writerow(measurement_val)
                     i += 1
