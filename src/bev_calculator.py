@@ -60,6 +60,7 @@ class BevCalculator:
         self.current_yaw = data.theta *180 /math.pi - 90
         while self.current_yaw < 0.0:
             self.current_yaw += 360.0
+        self.current_yaw = 360 - self.current_yaw
 
     def measurement(self, func, **kwargs):
         val = func(kwargs["img1"], kwargs["img2"])
