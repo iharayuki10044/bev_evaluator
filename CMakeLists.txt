@@ -161,16 +161,21 @@ add_definitions(
 add_library(libbev_evaluator
    src/bev_evaluator.cpp
 )
+add_library(libflow_multiarray_publisher
+   src/flow_multiarray_publisher.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(libbev_evaluator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(libflow_multiarray_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(bev_evaluator src/bev_evaluator_node.cpp src/bev_evaluator)
+add_executable(bev_evaluator src/bev_evaluator_node.cpp src/bev_evaluator.cpp)
+add_executable(flow_multiarray_publisher src/flow_multiarray_publisher_node.cpp src/flow_multiarray_publisher.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -181,6 +186,7 @@ add_executable(bev_evaluator src/bev_evaluator_node.cpp src/bev_evaluator)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(bev_evaluator ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(flow_multiarray_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
@@ -192,6 +198,12 @@ target_link_libraries(bev_evaluator
 	${PCL_LIBRARIES}
     ${OpenCV_LIBS}
     libbev_evaluator
+)
+target_link_libraries(flow_multiarray_publisher
+	${catkin_LIBRARIES}
+	${PCL_LIBRARIES}
+    ${OpenCV_LIBS}
+    libflow_multiarray_publisher
 )
 
 #############
